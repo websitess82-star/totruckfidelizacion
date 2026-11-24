@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TORTRUCK LEALTAD | Tu Lealtad Tiene Sabor</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tipografías Retro Editorial y Script Oficial TorTruck -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Lobster&family=Shrikhand&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- QRCode.js para generación de QR seguro -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- HTML5-QRCode para escaneo en Panel Administrativo -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Fredoka', 'sans-serif'],
+                        retro: ['Shrikhand', 'Lobster', 'cursive'],
+                    },
+                    colors: {
+                        tt: {
+                            teal: '#53A6BC',
+                            tealLight: '#76BFD2',
+                            tealDark: '#357B8E',
+                            red: '#C83E2B',
+                            redDark: '#9E2B1B',
+                            yellow: '#EBB03D',
+                            yellowLight: '#F8D57E',
+                            cream: '#FBF5E6',
+                            ink: '#132227',
+                            green: '#7E9C4B',
+                            patty: '#6B3423'
+                        }
+                    },
+                    animation: {
+                        'mascot-bounce': 'mascotBounce 3.2s ease-in-out infinite',
+                        'stamp-pop': 'stampPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                    },
+                    keyframes: {
+                        mascotBounce: {
+                            '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-8px) rotate(1.5deg)' },
+                        },
+                        stampPop: {
+                            '0%': { transform: 'scale(0.3) rotate(-18deg)', opacity: '0' },
+                            '75%': { transform: 'scale(1.12) rotate(4deg)', opacity: '1' },
+                            '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .halftone-bg {
+            background-color: #53A6BC;
+            background-image: radial-gradient(#132227 1.35px, transparent 1.35px);
+            background-size: 18px 18px;
+        }
+        .halftone-yellow {
+            background-color: #EBB03D;
+            background-image: radial-gradient(rgba(19, 34, 39, 0.16) 1.5px, transparent 1.5px);
+            background-size: 12px 12px;
+        }
+        .halftone-cream {
+            background-color: #FBF5E6;
+            background-image: radial-gradient(rgba(19, 34, 39, 0.08) 1.25px, transparent 1.25px);
+            background-size: 16px 16px;
+        }
+        .retro-sunburst {
+            background: repeating-conic-gradient(
+                from 0deg,
+                rgba(251, 245, 230, 0.22) 0deg 15deg,
+                transparent 15deg 30deg
+            );
+        }
+        .comic-box {
+            border: 3.5px solid #132227;
+            box-shadow: 6px 6px 0px #132227;
+        }
+        .comic-box-lg {
+            border: 4px solid #132227;
+            box-shadow: 10px 10px 0px #132227;
+        }
+        .comic-btn {
+            border: 3px solid #132227;
+            box-shadow: 4px 4px 0px #132227;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+        .comic-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #132227;
+        }
+        .comic-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #132227;
+        }
+        .tt-logo-script {
+            font-family: 'Shrikhand', 'Lobster', cursive;
+            color: #C83E2B;
+            -webkit-text-stroke: 3px #132227;
+            paint-order: stroke fill;
+            text-shadow: 4px 5px 0px #132227;
+            line-height: 1.25;
+            padding: 0.15em 0.05em;
+            display: inline-block;
+        }
+        .tt-title-outline {
+            -webkit-text-stroke: 2px #132227;
+            paint-order: stroke fill;
+            text-shadow: 3px 4px 0px #132227;
+        }
+        .ticker-tape {
+            background-color: #EBB03D;
+            border-top: 3.5px solid #132227;
+            border-bottom: 3.5px solid #132227;
+        }
+        .stamp-earned {
+            background-color: #FBF5E6;
+            border: 3px solid #132227;
+            box-shadow: 3px 3px 0px #132227;
+        }
+        .stamp-empty {
+            background-color: rgba(251, 245, 230, 0.55);
+            border: 2.5px dashed #132227;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="halftone-cream text-tt-ink font-sans antialiased selection:bg-tt-red selection:text-tt-cream overflow-x-hidden">
+
+    <!-- CONTENEDOR DE NOTIFICACIONES CON PERSONAJE TORTRUCK -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden bg-tt-ink/75 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-tt-cream rounded-3xl max-w-md w-full p-6 comic-box-lg">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-11 h-11 rounded-2xl bg-tt-yellow border-2 border-tt-ink flex items-center justify-center text-tt-red text-xl shrink-0">
+                    <i class="fa-solid fa-burger"></i>
+                </div>
+                <h3 id="confirm-title" class="font-display font-bold text-xl text-tt-ink">Confirmar Acción</h3>
+            </div>
+            <p id="confirm-message" class="text-sm text-tt-ink/85 mb-6 leading-relaxed"></p>
+            <div class="flex justify-end gap-3">
+                <button id="confirm-cancel-btn" class="px-4 py-2.5 rounded-xl font-display font-bold text-sm bg-white text-tt-ink comic-btn">
+                    Cancelar
+                </button>
+                <button id="confirm-ok-btn" class="px-5 py-2.5 rounded-xl font-display font-bold text-sm bg-tt-red text-tt-cream comic-btn">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE RECUPERACIÓN DE CONTRASEÑA -->
+    <div id="reset-password-modal" class="fixed inset-0 z-50 hidden bg-tt-ink/80 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-tt-cream rounded-3xl max-w-md w-full p-6 sm:p-7 comic-box-lg">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-display font-extrabold text-xl text-tt-ink">
+                    <i class="fa-solid fa-key text-tt-red mr-2"></i>Recuperar Contraseña
+                </h3>
+                <button onclick="toggleResetModal(false)" class="w-9 h-9 rounded-xl bg-white border-2 border-tt-ink flex items-center justify-center hover:bg-tt-yellow transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-tt-ink/80 mb-4 leading-relaxed">
+                Ingresa el correo electrónico con el que te registraste. Te enviaremos un enlace oficial para restablecer tu contraseña sin costo.
+            </p>
+            <form onsubmit="handlePasswordResetSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">Correo Electrónico</label>
+                    <input type="email" id="reset-email-input" required placeholder="tu-correo@ejemplo.com" 
+                           class="w-full px-4 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-tt-teal">
+                </div>
+                <button type="submit" id="btn-send-reset" class="w-full py-3.5 rounded-xl font-display font-extrabold text-sm bg-tt-red text-tt-cream comic-btn">
+                    Enviar Enlace de Recuperación
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PLANTILLA REUTILIZABLE DE ILUSTRACIÓN OFICIAL TORTRUCK -->
+    <template id="tpl-tortruck-mascot">
+        <svg viewBox="0 0 240 230" class="w-full h-full overflow-visible drop-shadow-[0_6px_0_rgba(19,34,39,0.28)]" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="122" cy="214" rx="68" ry="8" fill="#132227"/>
+            <path d="M92 168 Q84 188 72 200" fill="none" stroke="#132227" stroke-width="13" stroke-linecap="round"/>
+            <g>
+                <path d="M48 202 C48 188, 84 188, 86 204 C86 212, 48 212, 48 202 Z" fill="#468EA3" stroke="#132227" stroke-width="5" stroke-linejoin="round"/>
+                <path d="M48 206 L86 206" stroke="#FBF5E6" stroke-width="3.5"/>
+                <path d="M68 192 L74 198" stroke="#FBF5E6" stroke-width="2.5" stroke-linecap="round"/>
+            </g>
+            <path d="M144 168 Q152 188 160 202" fill="none" stroke="#132227" stroke-width="13" stroke-linecap="round"/>
+            <g>
+                <path d="M146 204 C146 189, 184 189, 186 204 C186 213, 146 213, 146 204 Z" fill="#468EA3" stroke="#132227" stroke-width="5" stroke-linejoin="round"/>
+                <path d="M146 208 L186 208" stroke="#FBF5E6" stroke-width="3.5"/>
+                <path d="M162 193 L168 199" stroke="#FBF5E6" stroke-width="2.5" stroke-linecap="round"/>
+            </g>
+            <path d="M48 122 Q22 134 30 158" fill="none" stroke="#132227" stroke-width="12" stroke-linecap="round"/>
+            <g transform="translate(12, 148)">
+                <rect x="2" y="4" width="32" height="30" rx="13" fill="#FBF5E6" stroke="#132227" stroke-width="4.5"/>
+                <line x1="12" y1="8" x2="12" y2="18" stroke="#132227" stroke-width="3" stroke-linecap="round"/>
+                <line x1="18" y1="8" x2="18" y2="18" stroke="#132227" stroke-width="3" stroke-linecap="round"/>
+                <line x1="24" y1="9" x2="24" y2="18" stroke="#132227" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <path d="M192 120 Q218 112 212 88" fill="none" stroke="#132227" stroke-width="12" stroke-linecap="round"/>
+            <g transform="translate(194, 62)">
+                <rect x="2" y="2" width="32" height="30" rx="12" fill="#FBF5E6" stroke="#132227" stroke-width="4.5"/>
+                <path d="M5 17 Q17 22 29 15" fill="none" stroke="#132227" stroke-width="3.5" stroke-linecap="round"/>
+                <line x1="12" y1="5" x2="12" y2="14" stroke="#132227" stroke-width="3" stroke-linecap="round"/>
+                <line x1="19" y1="5" x2="19" y2="14" stroke="#132227" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <path d="M68 64 C68 20, 160 20, 168 64 Z" fill="#FBF5E6" stroke="#132227" stroke-width="5.5" stroke-linejoin="round"/>
+            <path d="M66 63 C66 25, 98 23, 102 63 Z" fill="#C83E2B" stroke="#132227" stroke-width="5" stroke-linejoin="round"/>
+            <circle cx="114" cy="24" r="6" fill="#C83E2B" stroke="#132227" stroke-width="4"/>
+            <path d="M98 60 L204 65 C209 74, 186 80, 98 74 Z" fill="#C83E2B" stroke="#132227" stroke-width="5" stroke-linejoin="round"/>
+            <text x="107" y="53" font-family="Fredoka, Arial Black, sans-serif" font-size="13.5" font-weight="800" fill="#C83E2B">TORTRUCK</text>
+            <path d="M48 108 C48 60, 192 60, 192 108 Z" fill="#EBB03D" stroke="#132227" stroke-width="5.5" stroke-linejoin="round"/>
+            <ellipse cx="74" cy="84" rx="7" ry="3.5" transform="rotate(-25 74 84)" fill="#FBF5E6" opacity="0.75"/>
+            <ellipse cx="108" cy="88" rx="10" ry="14" fill="#FBF5E6" stroke="#132227" stroke-width="4"/>
+            <path d="M111 79 A6.5 9 0 1 0 111 97 L104 88 Z" fill="#132227"/>
+            <ellipse cx="136" cy="88" rx="10" ry="14" fill="#FBF5E6" stroke="#132227" stroke-width="4"/>
+            <path d="M139 79 A6.5 9 0 1 0 139 97 L132 88 Z" fill="#132227"/>
+            <ellipse cx="152" cy="100" rx="9.5" ry="7" fill="#EBB03D" stroke="#132227" stroke-width="4"/>
+            <path d="M80 108 Q122 142 162 109" fill="#132227" stroke="#132227" stroke-width="5" stroke-linecap="round"/>
+            <path d="M100 122 Q122 134 142 122 Z" fill="#C83E2B"/>
+            <path d="M38 124 Q60 136 82 124 Q120 138 158 124 Q180 136 202 124 L192 137 L48 137 Z" fill="#7E9C4B" stroke="#132227" stroke-width="4.5" stroke-linejoin="round"/>
+            <rect x="42" y="136" width="156" height="19" rx="9.5" fill="#6B3423" stroke="#132227" stroke-width="5"/>
+            <path d="M50 155 L190 155 C190 176, 50 176, 50 155 Z" fill="#EBB03D" stroke="#132227" stroke-width="5.5" stroke-linejoin="round"/>
+        </svg>
+    </template>
+
+    <!-- ===================================================================== -->
+    <!-- BARRA DE NAVEGACIÓN EDITORIAL TORTRUCK                                -->
+    <!-- ===================================================================== -->
+    <header class="sticky top-0 z-40 bg-tt-cream border-b-4 border-tt-ink">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-[72px] sm:min-h-[84px] py-2 flex items-center justify-between gap-2">
+            <a href="#inicio" onclick="navigateTo('landing')" class="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+                <div class="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-tt-teal border-3 border-tt-ink shadow-[3px_3px_0px_#132227] flex items-center justify-center p-1 group-hover:rotate-3 transition overflow-visible" data-mascot-slot></div>
+                <div>
+                    <span class="font-retro text-xl sm:text-3xl text-tt-red block leading-none" style="-webkit-text-stroke: 1.5px #132227; paint-order: stroke fill; text-shadow: 2px 2px 0px #132227;">
+                        TorTruck
+                    </span>
+                    <span class="inline-block mt-1 px-1.5 sm:px-2 py-0.5 rounded-md bg-tt-yellow border border-tt-ink text-[9px] sm:text-[10px] font-display font-extrabold uppercase tracking-wider text-tt-ink">
+                        Lealtad Oficial
+                    </span>
+                </div>
+            </a>
+
+            <nav class="flex items-center gap-1.5 sm:gap-3">
+                <div id="nav-guest" class="flex items-center gap-1.5 sm:gap-3">
+                    <button onclick="navigateTo('auth-login')" class="px-2.5 sm:px-4 py-2 rounded-xl font-display font-bold text-[11px] sm:text-sm bg-white text-tt-ink comic-btn whitespace-nowrap">
+                        <span class="sm:hidden">Ingresar</span>
+                        <span class="hidden sm:inline">Ya tengo mi cuenta</span>
+                    </button>
+                    <button onclick="navigateTo('auth-register')" class="px-3 sm:px-5 py-2 rounded-xl font-display font-bold text-[11px] sm:text-sm bg-tt-red text-tt-cream comic-btn whitespace-nowrap">
+                        Unirme
+                    </button>
+                </div>
+
+                <div id="nav-client" class="hidden flex items-center gap-1.5 sm:gap-3">
+                    <button onclick="navigateTo('client-dashboard')" class="px-3 py-2 rounded-xl font-display font-bold text-xs sm:text-sm bg-tt-yellow text-tt-ink comic-btn whitespace-nowrap">
+                        <i class="fa-solid fa-ticket mr-1 text-tt-red"></i>Mi Tarjeta
+                    </button>
+                    <button id="btn-switch-admin" onclick="navigateTo('admin-dashboard')" class="hidden px-3 py-2 rounded-xl font-display font-bold text-xs sm:text-sm bg-tt-teal text-tt-cream comic-btn whitespace-nowrap">
+                        <i class="fa-solid fa-shield-halved mr-1"></i>Admin
+                    </button>
+                    <button onclick="logoutUser()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white text-tt-ink comic-btn flex items-center justify-center shrink-0" title="Cerrar Sesión">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 1: PORTADA ESPECTACULAR TORTRUCK LEALTAD                        -->
+    <!-- ===================================================================== -->
+    <main id="view-landing" class="block">
+        <section class="relative halftone-bg pt-8 pb-14 sm:pt-12 sm:pb-20 lg:py-20 overflow-hidden">
+            <div class="absolute right-[-15%] top-[-10%] w-[680px] h-[680px] rounded-full retro-sunburst pointer-events-none opacity-60"></div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+                    
+                    <div class="lg:col-span-7 text-center lg:text-left">
+                        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tt-cream border-3 border-tt-ink shadow-[3px_3px_0px_#132227] text-tt-ink text-xs font-display font-extrabold uppercase tracking-wider mb-4">
+                            <i class="fa-solid fa-star text-tt-red"></i> Club Oficial de Fidelización
+                        </div>
+
+                        <div class="mb-2">
+                            <span class="tt-logo-script text-6xl sm:text-7xl lg:text-8xl transform -rotate-2">
+                                TorTruck
+                            </span>
+                        </div>
+
+                        <h1 class="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl text-tt-cream tt-title-outline tracking-tight leading-none mb-4">
+                            TU LEALTAD <span class="text-tt-yellowLight">TIENE SABOR</span>
+                        </h1>
+
+                        <p class="font-display font-bold text-xl sm:text-2xl text-tt-ink bg-tt-cream/95 inline-block px-5 py-2.5 rounded-2xl border-3 border-tt-ink shadow-[4px_4px_0px_#132227] mb-7">
+                            Cada visita te acerca a una hamburguesa gratis
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-8">
+                            <button onclick="navigateTo('auth-register')" class="w-full sm:w-auto px-8 py-4 rounded-2xl font-display font-extrabold text-lg bg-tt-red text-tt-cream comic-btn flex items-center justify-center gap-2.5">
+                                <i class="fa-solid fa-burger"></i> UNIRME AHORA
+                            </button>
+                            <button onclick="navigateTo('auth-login')" class="w-full sm:w-auto px-8 py-4 rounded-2xl font-display font-extrabold text-lg bg-tt-yellow text-tt-ink comic-btn flex items-center justify-center gap-2.5">
+                                <i class="fa-solid fa-user-check text-tt-red"></i> YA TENGO MI CUENTA
+                            </button>
+                        </div>
+
+                        <div class="bg-tt-ink text-tt-cream p-4 sm:p-5 rounded-2xl border-3 border-tt-ink shadow-[5px_5px_0px_#EBB03D] max-w-xl mx-auto lg:mx-0 text-xs sm:text-sm leading-relaxed">
+                            <span class="text-tt-yellow font-display font-bold uppercase tracking-wider block mb-1">
+                                <i class="fa-solid fa-bolt mr-1"></i> Reglas Oficiales del Club:
+                            </span>
+                            Por tu <strong>1ra compra de $150 MXN o más</strong> recibes <strong class="text-tt-yellow">2 sellos</strong>. Después, cada compra de <strong>$150 MXN o más</strong> suma <strong class="text-tt-yellow">1 sello</strong>. Al llegar a <strong>10 sellos</strong>, ¡tu <strong>Hamburguesa Clásica es GRATIS</strong>!
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 flex flex-col items-center">
+                        <div class="relative w-full max-w-md">
+                            <div class="w-48 h-48 sm:w-56 sm:h-56 mx-auto -mb-10 relative z-20 animate-mascot-bounce" data-mascot-slot></div>
+
+                            <div class="halftone-yellow rounded-3xl p-6 pt-12 comic-box-lg relative z-10">
+                                <div class="flex items-center justify-between border-b-3 border-tt-ink pb-3 mb-4">
+                                    <div>
+                                        <span class="text-[10px] font-display font-extrabold uppercase tracking-widest bg-tt-red text-tt-cream px-2 py-0.5 rounded border border-tt-ink">
+                                            Tarjeta Coleccionable
+                                        </span>
+                                        <h2 class="font-display font-extrabold text-xl text-tt-ink mt-1">10 Sellos = 1 Clásica Gratis</h2>
+                                    </div>
+                                    <div class="w-11 h-11 rounded-xl bg-tt-cream border-2 border-tt-ink flex items-center justify-center text-xl text-tt-ink">
+                                        <i class="fa-solid fa-qrcode"></i>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-5 gap-2.5 mb-4">
+                                    <div class="aspect-square rounded-2xl stamp-earned flex flex-col items-center justify-center">
+                                        <i class="fa-solid fa-burger text-tt-red text-lg"></i>
+                                        <span class="text-[10px] font-extrabold">#1</span>
+                                    </div>
+                                    <div class="aspect-square rounded-2xl stamp-earned flex flex-col items-center justify-center">
+                                        <i class="fa-solid fa-burger text-tt-red text-lg"></i>
+                                        <span class="text-[10px] font-extrabold">#2</span>
+                                    </div>
+                                    <div class="aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm">3</div>
+                                    <div class="aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm">4</div>
+                                    <div class="aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm">5</div>
+                                    <div class="aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm">6</div>
+                                    <div class="aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm">7</div>
+                                    <div class="aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm">8</div>
+                                    <div class="aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm">9</div>
+                                    <div class="aspect-square rounded-2xl bg-tt-red text-tt-cream border-3 border-tt-ink flex flex-col items-center justify-center">
+                                        <i class="fa-solid fa-gift text-sm"></i>
+                                        <span class="text-[8px] font-extrabold uppercase">Gratis</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between text-xs font-display font-bold bg-tt-cream px-3.5 py-2 rounded-xl border-2 border-tt-ink">
+                                    <span>1ra Compra ≥ $150 MXN</span>
+                                    <span class="text-tt-red font-extrabold">+2 SELLOS AL INSTANTE</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="ticker-tape py-3 overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-around gap-4 font-display font-extrabold text-xs sm:text-sm uppercase tracking-wider text-tt-ink">
+                <span><i class="fa-solid fa-burger text-tt-red mr-1.5"></i> Tu Lealtad Tiene Sabor</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-star text-tt-red mr-1.5"></i> 1ra Compra ≥ $150 = +2 Sellos</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-award text-tt-red mr-1.5"></i> 10 Sellos = Hamburguesa Clásica Gratis</span>
+            </div>
+        </div>
+
+        <section class="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-14">
+                <span class="inline-block px-3.5 py-1 rounded-full bg-tt-teal text-tt-cream border-2 border-tt-ink font-display font-bold text-xs uppercase tracking-wider mb-3">
+                    Fácil, Rápido y Digital
+                </span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-5xl text-tt-ink">
+                    ¿Cómo ganas tu <span class="text-tt-red">Hamburguesa Gratis</span>?
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-3xl p-7 comic-box relative flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="w-12 h-12 rounded-2xl bg-tt-teal text-tt-cream border-3 border-tt-ink font-display font-extrabold text-2xl flex items-center justify-center shadow-[3px_3px_0px_#132227]">
+                                1
+                            </span>
+                            <div class="w-14 h-14 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-center text-2xl text-tt-ink">
+                                <i class="fa-solid fa-envelope-open-text"></i>
+                            </div>
+                        </div>
+                        <h3 class="font-display font-extrabold text-2xl text-tt-ink mb-2">1. REGÍSTRATE</h3>
+                        <p class="text-sm text-tt-ink/80 leading-relaxed">
+                            Crea tu cuenta gratuita con tu nombre completo, correo electrónico y contraseña. Tu tarjeta digital arranca en <strong>0 sellos</strong> con su propio código QR.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t-2 border-tt-ink/15 text-xs font-display font-bold text-tt-tealDark">
+                        Acceso inmediato desde cualquier dispositivo
+                    </div>
+                </div>
+
+                <div class="halftone-yellow rounded-3xl p-7 comic-box relative flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="w-12 h-12 rounded-2xl bg-tt-red text-tt-cream border-3 border-tt-ink font-display font-extrabold text-2xl flex items-center justify-center shadow-[3px_3px_0px_#132227]">
+                                2
+                            </span>
+                            <div class="w-14 h-14 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-center text-2xl text-tt-red">
+                                <i class="fa-solid fa-stamp"></i>
+                            </div>
+                        </div>
+                        <h3 class="font-display font-extrabold text-2xl text-tt-ink mb-2">2. COMPRA Y ACUMULA</h3>
+                        <p class="text-sm text-tt-ink/90 leading-relaxed">
+                            Muestra tu QR en compras con subtotal de productos de <strong>$150 MXN o más</strong>. Recibes <strong>+2 sellos</strong> en tu primera compra del ciclo y <strong>+1 sello</strong> en las siguientes.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t-2 border-tt-ink/20 text-xs font-display font-bold text-tt-ink">
+                        No incluye envío ni propinas
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl p-7 comic-box relative flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="w-12 h-12 rounded-2xl bg-tt-yellow text-tt-ink border-3 border-tt-ink font-display font-extrabold text-2xl flex items-center justify-center shadow-[3px_3px_0px_#132227]">
+                                3
+                            </span>
+                            <div class="w-16 h-16 -my-2" data-mascot-slot></div>
+                        </div>
+                        <h3 class="font-display font-extrabold text-2xl text-tt-ink mb-2">3. DISFRUTA</h3>
+                        <p class="text-sm text-tt-ink/80 leading-relaxed">
+                            Completa <strong>10 sellos</strong> y recibe una <strong>Hamburguesa Clásica Gratis</strong>. Al canjearla, estrenas automáticamente un nuevo ciclo en 0 sellos.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t-2 border-tt-ink/15 text-xs font-display font-bold text-tt-red">
+                        ¡Premio desbloqueado automáticamente!
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-tt-teal rounded-3xl p-6 sm:p-10 lg:p-12 comic-box-lg relative overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+                    <div class="lg:col-span-6">
+                        <span class="inline-block px-3.5 py-1 rounded-full bg-tt-yellow border-2 border-tt-ink font-display font-extrabold text-xs uppercase text-tt-ink mb-3">
+                            Recompensa Oficial al Sello 10
+                        </span>
+                        <h2 class="font-display font-extrabold text-3xl sm:text-5xl text-tt-cream tt-title-outline mb-4">
+                            HAMBURGUESA CLÁSICA GRATIS
+                        </h2>
+                        <p class="text-tt-cream font-medium text-base mb-6 leading-relaxed">
+                            Carne jugosa a la parrilla, pan dorado suave, lechuga fresca y el toque artesanal de TorTruck. Completa tus 10 sellos y ven por la tuya sin costo.
+                        </p>
+                        <button onclick="navigateTo('auth-register')" class="px-7 py-3.5 rounded-2xl font-display font-extrabold text-base bg-tt-yellow text-tt-ink comic-btn">
+                            Empezar mi Tarjeta Hoy <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+
+                    <div class="lg:col-span-6 relative">
+                        <div class="rounded-3xl overflow-hidden border-4 border-tt-ink shadow-[8px_8px_0px_#132227] bg-tt-ink aspect-[16/10]">
+                            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=85" 
+                                 onerror="this.src='https://placehold.co/900x560/EBB03D/132227?text=HAMBURGUESA+CLASICA+TORTRUCK'"
+                                 alt="Hamburguesa Clásica Gratis TORTRUCK" 
+                                 class="w-full h-full object-cover">
+                        </div>
+                        <div class="w-28 h-28 sm:w-36 sm:h-36 absolute -bottom-6 -left-4 sm:-left-6 animate-mascot-bounce" data-mascot-slot></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 2: AUTENTICACIÓN CORREO Y CONTRASEÑA (FIREBASE SPARK)           -->
+    <!-- ===================================================================== -->
+    <section id="view-auth" class="hidden min-h-[calc(100vh-5rem)] py-10 px-4 flex items-center justify-center halftone-bg">
+        <div class="max-w-md w-full bg-tt-cream rounded-3xl comic-box-lg overflow-hidden">
+            <div class="grid grid-cols-2 bg-tt-ink p-1.5 gap-1.5">
+                <button id="tab-register" onclick="switchAuthTab('register')" class="py-3 rounded-2xl font-display font-extrabold text-sm transition bg-tt-red text-tt-cream">
+                    Crear Cuenta
+                </button>
+                <button id="tab-login" onclick="switchAuthTab('login')" class="py-3 rounded-2xl font-display font-extrabold text-sm transition text-tt-cream/70 hover:text-tt-cream">
+                    Ya tengo mi cuenta
+                </button>
+            </div>
+
+            <div class="p-6 sm:p-8">
+                <div class="w-24 h-24 mx-auto mb-3" data-mascot-slot></div>
+
+                <!-- FORMULARIO DE REGISTRO -->
+                <form id="form-register" onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+                    <div class="text-center mb-3">
+                        <h2 class="font-display font-extrabold text-2xl text-tt-ink">¡Únete a TorTruck!</h2>
+                        <p class="text-xs text-tt-ink/75 mt-1">Crea tu cuenta gratuita. Tu tarjeta inicia con <strong>0 sellos</strong>.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">
+                            Nombre Completo <span class="text-tt-red">*</span>
+                        </label>
+                        <input type="text" id="reg-name" required minlength="3" placeholder="Ej. Carlos Mendoza" 
+                               class="w-full px-4 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">
+                            Correo Electrónico <span class="text-tt-red">*</span>
+                        </label>
+                        <input type="email" id="reg-email" required placeholder="tu-correo@ejemplo.com" 
+                               class="w-full px-4 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">
+                            Contraseña <span class="text-tt-red">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="password" id="reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" 
+                                   class="w-full px-4 py-3 pr-11 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                            <button type="button" onclick="togglePasswordVisibility('reg-password', this)" class="absolute right-3 top-3 text-tt-ink/70 hover:text-tt-ink">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">
+                            Confirmar Contraseña <span class="text-tt-red">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Repite tu contraseña" 
+                                   class="w-full px-4 py-3 pr-11 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                            <button type="button" onclick="togglePasswordVisibility('reg-password-confirm', this)" class="absolute right-3 top-3 text-tt-ink/70 hover:text-tt-ink">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-2.5 pt-1">
+                        <input type="checkbox" id="reg-terms" required class="mt-1 w-4 h-4 accent-tt-red rounded">
+                        <label for="reg-terms" class="text-xs text-tt-ink/85 leading-relaxed">
+                            Acepto los <button type="button" onclick="showLegalNotice()" class="text-tt-red font-bold underline">Términos y Aviso de Privacidad</button> de TORTRUCK LEALTAD. Entiendo que el registro otorga 0 sellos.
+                        </label>
+                    </div>
+
+                    <button type="submit" id="btn-submit-register" class="w-full py-3.5 rounded-xl font-display font-extrabold text-base bg-tt-red text-tt-cream comic-btn flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Crear Mi Cuenta
+                    </button>
+                </form>
+
+                <!-- FORMULARIO DE INICIO DE SESIÓN -->
+                <form id="form-login" onsubmit="handleLoginSubmit(event)" class="hidden space-y-4">
+                    <div class="text-center mb-3">
+                        <h2 class="font-display font-extrabold text-2xl text-tt-ink">¡Hola de nuevo!</h2>
+                        <p class="text-xs text-tt-ink/75 mt-1">Inicia sesión para ver tu tarjeta digital y código QR.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">
+                            Correo Electrónico
+                        </label>
+                        <input type="email" id="login-email" required placeholder="tu-correo@ejemplo.com" 
+                               class="w-full px-4 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-display font-bold uppercase text-tt-ink">
+                                Contraseña
+                            </label>
+                            <button type="button" onclick="toggleResetModal(true)" class="text-xs font-display font-bold text-tt-red hover:underline">
+                                ¿Olvidaste tu contraseña?
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <input type="password" id="login-password" required placeholder="••••••••" 
+                                   class="w-full px-4 py-3 pr-11 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                            <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 top-3 text-tt-ink/70 hover:text-tt-ink">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-submit-login" class="w-full py-3.5 rounded-xl font-display font-extrabold text-base bg-tt-yellow text-tt-ink comic-btn flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket text-tt-red"></i> Iniciar Sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 2B: ACCESO INDEPENDIENTE AL PANEL ADMINISTRATIVO (#admin)       -->
+    <!-- ===================================================================== -->
+    <section id="view-admin-login" class="hidden min-h-[calc(100vh-5rem)] py-12 px-4 flex items-center justify-center bg-tt-ink">
+        <div class="max-w-md w-full bg-tt-cream rounded-3xl p-6 sm:p-8 comic-box-lg">
+            <div class="flex items-center justify-between mb-4">
+                <span class="px-3 py-1 rounded-full bg-tt-red text-tt-cream border-2 border-tt-ink font-display font-extrabold text-xs uppercase">
+                    <i class="fa-solid fa-shield-halved mr-1.5"></i> Acceso Administrativo
+                </span>
+                <button onclick="navigateTo('landing')" class="text-xs font-display font-bold text-tt-ink/70 hover:text-tt-ink">
+                    Volver al inicio
+                </button>
+            </div>
+
+            <div class="w-20 h-20 mx-auto mb-3" data-mascot-slot></div>
+            <h2 class="font-display font-extrabold text-2xl text-center text-tt-ink mb-1">Portal Staff TORTRUCK</h2>
+            <p class="text-xs text-center text-tt-ink/75 mb-6">
+                Exclusivo para personal autorizado. Se verificará tu permiso administrativo en Firestore.
+            </p>
+
+            <form onsubmit="handleAdminLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">Correo Administrativo</label>
+                    <input type="email" id="admin-login-email" required placeholder="admin@tortruck.com" 
+                           class="w-full px-4 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">Contraseña</label>
+                    <div class="relative">
+                        <input type="password" id="admin-login-password" required placeholder="••••••••" 
+                               class="w-full px-4 py-3 pr-11 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium focus:ring-2 focus:ring-tt-teal outline-none">
+                        <button type="button" onclick="togglePasswordVisibility('admin-login-password', this)" class="absolute right-3 top-3 text-tt-ink/70 hover:text-tt-ink">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-submit-admin-login" class="w-full py-3.5 rounded-xl font-display font-extrabold text-base bg-tt-teal text-tt-cream comic-btn">
+                    Entrar al Panel Administrativo
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 3: CUENTA DEL CLIENTE (TARJETA COLECCIONABLE, QR E HISTORIALES) -->
+    <!-- ===================================================================== -->
+    <section id="view-client" class="hidden py-8 sm:py-12 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="bg-white rounded-3xl p-5 sm:p-6 comic-box mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-tt-teal border-3 border-tt-ink p-1 shrink-0" data-mascot-slot></div>
+                <div>
+                    <span class="inline-block px-2.5 py-0.5 rounded-md bg-tt-yellow border border-tt-ink text-[10px] font-display font-extrabold uppercase">
+                        Socio Oficial • Ciclo #<span id="client-cycle-number">1</span>
+                    </span>
+                    <h1 class="font-display font-extrabold text-2xl sm:text-3xl text-tt-ink mt-1">
+                        ¡Hola, <span id="client-display-name" class="text-tt-red">Cliente</span>!
+                    </h1>
+                    <p class="text-xs font-semibold text-tt-ink/70">
+                        Correo: <span id="client-display-email"></span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-tt-cream p-3.5 rounded-2xl border-2 border-tt-ink max-w-sm text-xs leading-relaxed">
+                <strong class="text-tt-red font-display">¿Cómo sumar?</strong> 1ra compra ≥ $150 MXN = <strong>+2 sellos</strong>. Siguientes ≥ $150 MXN = <strong>+1 sello</strong>. (Solo subtotal de productos).
+            </div>
+        </div>
+
+        <div id="account-disabled-banner" class="hidden mb-8 rounded-3xl bg-tt-red text-tt-cream p-6 comic-box">
+            <h2 class="font-display font-extrabold text-xl"><i class="fa-solid fa-ban mr-2"></i>Cuenta Suspendida Temporalmente</h2>
+            <p class="text-xs mt-1">Tu cuenta se encuentra deshabilitada por la administración de TORTRUCK. Acude a sucursal para más información.</p>
+        </div>
+
+        <div id="reward-unlocked-banner" class="hidden mb-8 rounded-3xl halftone-bg p-6 sm:p-8 comic-box-lg relative overflow-hidden">
+            <div class="absolute inset-0 retro-sunburst opacity-50 pointer-events-none"></div>
+            <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                    <div class="w-24 h-24 sm:w-28 sm:h-28 shrink-0 animate-mascot-bounce" data-mascot-slot></div>
+                    <div>
+                        <span class="inline-block px-3.5 py-1 rounded-full bg-tt-yellow border-2 border-tt-ink text-tt-ink text-xs font-display font-extrabold uppercase mb-2">
+                            ¡TARJETA COMPLETADA 10/10!
+                        </span>
+                        <h2 class="font-display font-extrabold text-2xl sm:text-4xl text-tt-cream tt-title-outline leading-tight">
+                            ¡LO LOGRASTE! TU HAMBURGUESA CLÁSICA VA POR NUESTRA CUENTA
+                        </h2>
+                        <p class="text-tt-cream font-semibold text-sm mt-2">
+                            Presenta tu Código QR en caja para validar tu premio e iniciar tu siguiente ciclo.
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-tt-yellow px-6 py-4 rounded-2xl border-3 border-tt-ink shadow-[4px_4px_0px_#132227] text-center shrink-0">
+                    <span class="block text-[11px] font-display font-bold uppercase text-tt-ink">Estado Recompensa</span>
+                    <span class="font-display font-extrabold text-xl text-tt-red">¡LISTA PARA CANJE!</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+            <div class="lg:col-span-7 halftone-yellow rounded-3xl p-6 sm:p-8 comic-box-lg flex flex-col justify-between relative">
+                <div>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b-3 border-tt-ink pb-4 mb-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl bg-tt-teal border-2 border-tt-ink p-0.5 shrink-0" data-mascot-slot></div>
+                            <div>
+                                <span class="font-retro text-2xl sm:text-3xl text-tt-red leading-none block" style="-webkit-text-stroke: 1.5px #132227; paint-order: stroke fill;">
+                                    TorTruck
+                                </span>
+                                <span class="text-[11px] font-display font-extrabold uppercase tracking-wider text-tt-ink">
+                                    Tarjeta Coleccionable Oficial
+                                </span>
+                            </div>
+                        </div>
+
+                        <span id="client-stamps-badge" class="px-4 py-1.5 rounded-xl bg-tt-cream border-3 border-tt-ink shadow-[3px_3px_0px_#132227] font-display font-extrabold text-base text-tt-ink">
+                            0 / 10 Sellos
+                        </span>
+                    </div>
+
+                    <div class="bg-tt-cream p-3.5 rounded-2xl border-2 border-tt-ink mb-6">
+                        <div class="flex justify-between text-xs font-display font-extrabold mb-1.5">
+                            <span>Progreso Ciclo #<span id="card-cycle-num">1</span></span>
+                            <span id="client-stamps-remaining" class="text-tt-red">Faltan 10 sellos</span>
+                        </div>
+                        <div class="w-full h-4 bg-white rounded-full overflow-hidden border-2 border-tt-ink">
+                            <div id="client-progress-bar" class="h-full bg-tt-red transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div id="stamps-grid" class="grid grid-cols-5 gap-3 sm:gap-4 my-5"></div>
+                </div>
+
+                <div class="pt-4 border-t-3 border-tt-ink flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <span class="block text-[10px] font-display font-extrabold uppercase text-tt-ink/70">Titular de la Tarjeta</span>
+                        <span id="card-holder-name" class="font-display font-extrabold text-base text-tt-ink">---</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-display font-extrabold uppercase text-tt-ink/70">Estado del Premio</span>
+                        <span id="card-reward-status" class="inline-block mt-0.5 px-3 py-1 rounded-lg bg-tt-ink text-tt-cream font-display font-bold text-xs">
+                            En progreso
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 comic-box-lg flex flex-col items-center justify-center text-center">
+                <span class="inline-block px-3.5 py-1 rounded-full bg-tt-teal text-tt-cream border-2 border-tt-ink font-display font-bold text-xs uppercase tracking-wider mb-3">
+                    Tu Pase Digital
+                </span>
+                <h3 class="font-display font-extrabold text-2xl text-tt-ink mb-1">Código QR Personal</h3>
+                <p class="text-xs text-tt-ink/75 mb-5 max-w-xs">
+                    Muéstralo en mostrador al realizar tu compra de $150 MXN o más.
+                </p>
+
+                <div class="p-4 bg-tt-cream rounded-3xl border-3 border-tt-ink shadow-[5px_5px_0px_#132227] mb-4 flex items-center justify-center">
+                    <div id="client-qrcode" class="w-44 h-44 flex items-center justify-center"></div>
+                </div>
+
+                <div class="bg-tt-ink text-tt-yellow px-4 py-2 rounded-xl text-xs font-mono font-bold mb-3 select-all">
+                    ID: <span id="client-public-code">---</span>
+                </div>
+
+                <button type="button" onclick="downloadClientQrImage()" class="mb-4 px-4 py-2 rounded-xl font-display font-bold text-xs bg-tt-yellow text-tt-ink comic-btn flex items-center gap-2">
+                    <i class="fa-solid fa-download text-tt-red"></i> Guardar QR en mi celular
+                </button>
+
+                <p class="text-[11px] text-tt-ink/70 leading-relaxed max-w-xs">
+                    <i class="fa-solid fa-shield-halved text-tt-red mr-1"></i>
+                    Código exclusivo de identificación. Solo el personal autorizado de TorTruck puede acreditar sellos o validar canjes.
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white rounded-3xl p-6 comic-box">
+                <div class="flex items-center justify-between mb-5 pb-3 border-b-2 border-tt-ink">
+                    <h3 class="font-display font-extrabold text-lg text-tt-ink">
+                        <i class="fa-solid fa-receipt text-tt-red mr-2"></i>Compras y Sellos
+                    </h3>
+                    <span id="client-purchases-count" class="px-3 py-1 rounded-xl bg-tt-yellow border-2 border-tt-ink text-xs font-display font-extrabold">0</span>
+                </div>
+                <div id="client-purchases-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    <p class="text-sm text-tt-ink/60 text-center py-8">Aún no tienes compras registradas.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 comic-box">
+                <div class="flex items-center justify-between mb-5 pb-3 border-b-2 border-tt-ink">
+                    <h3 class="font-display font-extrabold text-lg text-tt-ink">
+                        <i class="fa-solid fa-burger text-tt-red mr-2"></i>Canjes Realizados
+                    </h3>
+                    <span id="client-rewards-count" class="px-3 py-1 rounded-xl bg-tt-teal text-tt-cream border-2 border-tt-ink text-xs font-display font-extrabold">0</span>
+                </div>
+                <div id="client-rewards-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    <p class="text-sm text-tt-ink/60 text-center py-8">Completa 10 sellos para disfrutar tu primera Hamburguesa Clásica Gratis.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 comic-box">
+                <div class="flex items-center justify-between mb-5 pb-3 border-b-2 border-tt-ink">
+                    <h3 class="font-display font-extrabold text-lg text-tt-ink">
+                        <i class="fa-solid fa-rotate text-tt-red mr-2"></i>Mis Ciclos
+                    </h3>
+                    <span id="client-cycles-count" class="px-3 py-1 rounded-xl bg-tt-cream border-2 border-tt-ink text-xs font-display font-extrabold">1</span>
+                </div>
+                <div id="client-cycles-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    <p class="text-sm text-tt-ink/60 text-center py-8">Ciclo #1 activo.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 4: PANEL ADMINISTRATIVO INDEPENDIENTE (TORTRUCK SPARK)          -->
+    <!-- ===================================================================== -->
+    <section id="view-admin" class="hidden min-h-[calc(100vh-5rem)] py-6 sm:py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="bg-tt-teal rounded-3xl p-6 mb-6 comic-box flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-tt-cream border-2 border-tt-ink p-1 shrink-0" data-mascot-slot></div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-md bg-tt-yellow border border-tt-ink text-tt-ink text-[10px] font-display font-extrabold uppercase">
+                                Acceso Verificado Firestore
+                            </span>
+                            <span id="admin-role-badge" class="text-xs text-tt-cream font-bold">Administrador TORTRUCK</span>
+                        </div>
+                        <h1 class="font-display font-extrabold text-2xl sm:text-3xl text-tt-cream tt-title-outline mt-1">
+                            Panel Administrativo TORTRUCK
+                        </h1>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="navigateTo('client-dashboard')" class="px-4 py-2.5 rounded-xl font-display font-bold text-xs bg-tt-cream text-tt-ink comic-btn">
+                        <i class="fa-solid fa-ticket mr-1.5 text-tt-red"></i>Vista Cliente
+                    </button>
+                    <button onclick="logoutUser()" class="px-4 py-2.5 rounded-xl font-display font-bold text-xs bg-tt-red text-tt-cream comic-btn">
+                        <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Cerrar Sesión Admin
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <aside class="lg:col-span-3">
+                    <div class="bg-white rounded-3xl p-2.5 comic-box flex lg:flex-col gap-2 overflow-x-auto no-scrollbar">
+                        <button onclick="switchAdminSection('dashboard')" id="admin-nav-dashboard" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap bg-tt-red text-tt-cream border-2 border-tt-ink shadow-[3px_3px_0px_#132227]">
+                            <i class="fa-solid fa-chart-pie w-5 text-center"></i> Resumen General
+                        </button>
+                        <button onclick="switchAdminSection('customers')" id="admin-nav-customers" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream">
+                            <i class="fa-solid fa-users w-5 text-center"></i> Gestión Usuarios
+                        </button>
+                        <button onclick="switchAdminSection('register-purchase')" id="admin-nav-register-purchase" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream">
+                            <i class="fa-solid fa-qrcode w-5 text-center"></i> Registrar Compra
+                        </button>
+                        <button onclick="switchAdminSection('rewards')" id="admin-nav-rewards" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream">
+                            <i class="fa-solid fa-burger w-5 text-center"></i> Validar Canjes
+                            <span id="badge-pending-rewards" class="ml-auto px-2 py-0.5 text-xs rounded-full bg-tt-yellow border border-tt-ink text-tt-ink font-extrabold hidden">0</span>
+                        </button>
+                        <button onclick="switchAdminSection('reports')" id="admin-nav-reports" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream">
+                            <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Auditoría
+                        </button>
+                    </div>
+                </aside>
+
+                <div class="lg:col-span-9 space-y-6">
+
+                    <!-- A: RESUMEN GENERAL Y ESTADÍSTICAS -->
+                    <div id="admin-sec-dashboard" class="space-y-6">
+                        <div class="bg-white rounded-3xl p-4 comic-box flex flex-wrap items-center justify-between gap-3">
+                            <span class="font-display font-extrabold text-base text-tt-ink">Estadísticas Generales</span>
+                            <div class="flex gap-1.5 bg-tt-cream p-1 rounded-xl border-2 border-tt-ink">
+                                <button onclick="setStatsPeriod('all')" id="period-all" class="period-btn px-3 py-1 rounded-lg text-xs font-display font-bold bg-tt-ink text-tt-cream">Todo</button>
+                                <button onclick="setStatsPeriod('day')" id="period-day" class="period-btn px-3 py-1 rounded-lg text-xs font-display font-bold text-tt-ink">Hoy</button>
+                                <button onclick="setStatsPeriod('week')" id="period-week" class="period-btn px-3 py-1 rounded-lg text-xs font-display font-bold text-tt-ink">Semana</button>
+                                <button onclick="setStatsPeriod('month')" id="period-month" class="period-btn px-3 py-1 rounded-lg text-xs font-display font-bold text-tt-ink">Mes</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div class="bg-white p-5 rounded-3xl comic-box">
+                                <span class="text-xs font-bold text-tt-ink/70 uppercase">Total Usuarios</span>
+                                <p id="stat-total-clients" class="font-display font-extrabold text-3xl text-tt-ink mt-1">0</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-3xl comic-box">
+                                <span class="text-xs font-bold text-tt-ink/70 uppercase">Compras Registradas</span>
+                                <p id="stat-total-purchases" class="font-display font-extrabold text-3xl text-tt-ink mt-1">0</p>
+                            </div>
+                            <div class="halftone-yellow p-5 rounded-3xl comic-box">
+                                <span class="text-xs font-bold text-tt-ink uppercase">Sellos Entregados</span>
+                                <p id="stat-total-stamps" class="font-display font-extrabold text-3xl text-tt-red mt-1">0</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-3xl comic-box">
+                                <span class="text-xs font-bold text-tt-ink/70 uppercase">Tarjetas Completas</span>
+                                <p id="stat-completed-cards" class="font-display font-extrabold text-3xl text-tt-ink mt-1">0</p>
+                            </div>
+                            <div class="bg-tt-cream p-5 rounded-3xl comic-box">
+                                <span class="text-xs font-bold text-tt-red uppercase">Canjes Pendientes</span>
+                                <p id="stat-pending-rewards" class="font-display font-extrabold text-3xl text-tt-red mt-1">0</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-3xl comic-box">
+                                <span class="text-xs font-bold text-tt-ink/70 uppercase">Hamburguesas Canjeadas</span>
+                                <p id="stat-redeemed-rewards" class="font-display font-extrabold text-3xl text-tt-tealDark mt-1">0</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl p-6 comic-box">
+                            <h3 class="font-display font-extrabold text-lg text-tt-ink mb-4">
+                                <i class="fa-solid fa-user-clock text-tt-red mr-2"></i>Usuarios Registrados Recientemente
+                            </h3>
+                            <div id="recent-registrations-list" class="space-y-2.5">
+                                <p class="text-xs text-tt-ink/60">Sin usuarios registrados aún.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B: GESTIÓN DE USUARIOS -->
+                    <div id="admin-sec-customers" class="hidden space-y-6">
+                        <div class="bg-white rounded-3xl p-6 comic-box">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                <div>
+                                    <h2 class="font-display font-extrabold text-2xl text-tt-ink">Gestión de Usuarios</h2>
+                                    <p class="text-xs text-tt-ink/75">Consulta perfiles, estado de cuentas, sellos y administra accesos.</p>
+                                </div>
+                                <input type="text" oninput="filterAdminCustomers(this.value)" placeholder="Buscar por nombre o correo..." 
+                                       class="px-4 py-2.5 bg-tt-cream border-2 border-tt-ink rounded-xl text-sm outline-none sm:w-72">
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse hidden md:table">
+                                    <thead>
+                                        <tr class="border-b-3 border-tt-ink text-xs font-display font-extrabold uppercase text-tt-ink">
+                                            <th class="py-3 px-3">Usuario</th>
+                                            <th class="py-3 px-3">Registro</th>
+                                            <th class="py-3 px-3">Sellos</th>
+                                            <th class="py-3 px-3">Cuenta</th>
+                                            <th class="py-3 px-3 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-customers-table-body" class="divide-y divide-tt-ink/15 text-sm"></tbody>
+                                </table>
+                                <div id="admin-customers-mobile-cards" class="md:hidden space-y-3"></div>
+                            </div>
+                        </div>
+
+                        <div id="admin-customer-detail-modal" class="hidden bg-tt-cream rounded-3xl p-6 comic-box-lg">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="text-xs font-display font-extrabold text-tt-red uppercase">Perfil Detallado del Usuario</span>
+                                    <h3 id="det-client-name" class="font-display font-extrabold text-2xl text-tt-ink">---</h3>
+                                    <p id="det-client-info" class="text-xs text-tt-ink/75">---</p>
+                                </div>
+                                <button onclick="document.getElementById('admin-customer-detail-modal').classList.add('hidden')" class="w-9 h-9 rounded-xl bg-white border-2 border-tt-ink flex items-center justify-center">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div class="bg-white p-4 rounded-2xl border-2 border-tt-ink">
+                                    <h4 class="font-display font-extrabold text-sm text-tt-ink mb-2">Compras Registradas</h4>
+                                    <div id="det-client-purchases" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                                </div>
+                                <div class="bg-white p-4 rounded-2xl border-2 border-tt-ink">
+                                    <h4 class="font-display font-extrabold text-sm text-tt-ink mb-2">Ciclos y Canjes</h4>
+                                    <div id="det-client-cycles" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- C: REGISTRAR COMPRA -->
+                    <div id="admin-sec-register-purchase" class="hidden">
+                        <div class="bg-white rounded-3xl p-6 comic-box">
+                            <h2 class="font-display font-extrabold text-2xl text-tt-ink mb-1">Registrar Compra en Caja</h2>
+                            <p class="text-xs text-tt-ink/75 mb-6">
+                                Escanea el QR del cliente o búscalo por nombre/correo. El sistema aplica automáticamente las reglas (+2 sellos 1ra compra ≥ $150; +1 sello siguientes ≥ $150).
+                            </p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div class="border-2 border-tt-ink rounded-2xl p-4 bg-tt-cream">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-display font-extrabold uppercase text-tt-ink">
+                                            <i class="fa-solid fa-camera text-tt-red mr-1.5"></i>1. Escanear QR
+                                        </span>
+                                        <button type="button" id="btn-toggle-scanner" onclick="toggleQrScanner()" class="px-3 py-1.5 rounded-xl bg-tt-ink text-tt-cream font-display font-bold text-xs">
+                                            Activar Cámara
+                                        </button>
+                                    </div>
+                                    <div id="qr-reader" class="w-full rounded-xl overflow-hidden bg-tt-ink min-h-[160px] flex items-center justify-center text-xs text-tt-cream/70">
+                                        Cámara inactiva
+                                    </div>
+                                </div>
+
+                                <div class="border-2 border-tt-ink rounded-2xl p-4 bg-tt-cream">
+                                    <span class="block text-xs font-display font-extrabold uppercase text-tt-ink mb-3">
+                                        <i class="fa-solid fa-magnifying-glass text-tt-red mr-1.5"></i>2. Buscar Usuario
+                                    </span>
+                                    <input type="text" id="admin-search-client-input" oninput="searchClientForPurchase(this.value)" placeholder="Nombre, correo o ID QR..." 
+                                           class="w-full px-4 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-tt-teal">
+                                    <div id="admin-search-results" class="mt-2.5 max-h-36 overflow-y-auto space-y-1.5"></div>
+                                </div>
+                            </div>
+
+                            <div id="selected-client-purchase-box" class="hidden border-t-3 border-tt-ink pt-6">
+                                <div class="halftone-yellow rounded-2xl p-4 mb-5 border-2 border-tt-ink flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <span class="text-[10px] font-display font-extrabold uppercase bg-tt-ink text-tt-cream px-2 py-0.5 rounded">Cliente Seleccionado</span>
+                                        <h3 id="pos-client-name" class="font-display font-extrabold text-xl text-tt-ink mt-1">---</h3>
+                                        <p class="text-xs font-semibold text-tt-ink/80">Correo: <span id="pos-client-email">---</span> • Ciclo #<span id="pos-client-cycle">1</span></p>
+                                    </div>
+                                    <div class="bg-tt-cream px-4 py-2 rounded-xl border-2 border-tt-ink text-right">
+                                        <span class="block text-[10px] font-bold uppercase text-tt-ink/70">Sellos Actuales</span>
+                                        <span id="pos-client-stamps" class="font-display font-extrabold text-2xl text-tt-red">0 / 10</span>
+                                    </div>
+                                </div>
+
+                                <form onsubmit="submitPurchaseRegistration(event)" class="space-y-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">
+                                                Subtotal Productos ($ MXN) <span class="text-tt-red">*</span>
+                                            </label>
+                                            <div class="relative">
+                                                <span class="absolute left-3.5 top-3 font-display font-extrabold text-tt-ink">$</span>
+                                                <input type="number" id="pos-subtotal" required min="1" step="0.01" oninput="previewStampCalculation()" placeholder="0.00" 
+                                                       class="w-full pl-8 pr-3 py-3 bg-white border-2 border-tt-ink rounded-xl font-display font-extrabold text-lg outline-none focus:ring-2 focus:ring-tt-teal">
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-display font-bold uppercase text-tt-ink/75 mb-1">
+                                                Envío / Propina (No suma)
+                                            </label>
+                                            <div class="relative">
+                                                <span class="absolute left-3.5 top-3 font-display font-bold text-tt-ink/60">$</span>
+                                                <input type="number" id="pos-extras" min="0" step="0.01" oninput="previewStampCalculation()" placeholder="0.00" 
+                                                       class="w-full pl-8 pr-3 py-3 bg-tt-cream border-2 border-tt-ink/60 rounded-xl font-display font-bold text-base outline-none">
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-display font-bold uppercase text-tt-ink mb-1">
+                                                Folio Ticket (Opcional)
+                                            </label>
+                                            <input type="text" id="pos-ticket-ref" placeholder="Ej. TK-1045" 
+                                                   class="w-full px-3.5 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-tt-teal">
+                                        </div>
+                                    </div>
+
+                                    <div class="p-4 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-3">
+                                        <div>
+                                            <span class="text-xs font-display font-extrabold text-tt-ink block">Cálculo Automático:</span>
+                                            <span id="pos-rule-explanation" class="text-xs text-tt-ink/80">Ingresa el subtotal de productos...</span>
+                                        </div>
+                                        <span id="pos-rule-stamps-badge" class="px-4 py-2 rounded-xl font-display font-extrabold text-sm bg-white border-2 border-tt-ink text-tt-ink shrink-0">
+                                            +0 Sellos
+                                        </span>
+                                    </div>
+
+                                    <button type="submit" id="btn-submit-purchase" class="w-full py-4 rounded-2xl font-display font-extrabold text-base bg-tt-red text-tt-cream comic-btn">
+                                        Confirmar y Registrar Compra
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div id="last-purchase-receipt" class="hidden mt-6 p-5 rounded-2xl bg-tt-teal/20 border-2 border-tt-ink">
+                                <div class="flex items-center gap-2 font-display font-extrabold text-base text-tt-ink mb-2">
+                                    <i class="fa-solid fa-circle-check text-tt-red"></i> Compra Registrada Correctamente
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                    <div><span class="block text-tt-ink/70">Subtotal:</span><strong id="rec-subtotal">$0</strong></div>
+                                    <div><span class="block text-tt-ink/70">Elegible:</span><strong id="rec-eligible">Sí</strong></div>
+                                    <div><span class="block text-tt-ink/70">Sellos Sumados:</span><strong id="rec-stamps" class="text-tt-red">+0</strong></div>
+                                    <div><span class="block text-tt-ink/70">Total Tarjeta:</span><strong id="rec-total">0 / 10</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- D: VALIDAR CANJES -->
+                    <div id="admin-sec-rewards" class="hidden">
+                        <div class="bg-white rounded-3xl p-6 comic-box">
+                            <h2 class="font-display font-extrabold text-2xl text-tt-ink mb-1">Validar Hamburguesas Gratis (10/10)</h2>
+                            <p class="text-xs text-tt-ink/75 mb-6">
+                                Al confirmar la entrega de la Hamburguesa Clásica Gratis, el sistema cierra el ciclo completado y abre automáticamente una nueva tarjeta en 0 sellos.
+                            </p>
+                            <div id="admin-pending-rewards-list" class="space-y-4">
+                                <p class="text-sm text-tt-ink/60 text-center py-8">No hay recompensas pendientes de canje.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- E: AUDITORÍA -->
+                    <div id="admin-sec-reports" class="hidden">
+                        <div class="bg-white rounded-3xl p-6 comic-box">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                <div>
+                                    <h2 class="font-display font-extrabold text-2xl text-tt-ink">Historial de Auditoría</h2>
+                                    <p class="text-xs text-tt-ink/75">Bitácora de operaciones administrativas y sellos.</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="date" id="report-date-filter" onchange="renderAdminReports()" class="px-3 py-2 bg-tt-cream border-2 border-tt-ink rounded-xl text-xs font-bold">
+                                    <button onclick="document.getElementById('report-date-filter').value=''; renderAdminReports();" class="px-3 py-2 bg-tt-yellow border-2 border-tt-ink rounded-xl text-xs font-display font-bold">Limpiar</button>
+                                </div>
+                            </div>
+                            <div id="admin-audit-logs-list" class="space-y-2.5 max-h-[500px] overflow-y-auto"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PIE DE PÁGINA INDEPENDIENTE TORTRUCK LEALTAD -->
+    <footer class="bg-tt-ink text-tt-cream border-t-4 border-tt-red py-10 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-tt-teal border-2 border-tt-cream p-0.5" data-mascot-slot></div>
+                <div>
+                    <span class="font-retro text-lg text-tt-red block leading-none">TorTruck LEALTAD</span>
+                    <span class="text-tt-yellow font-bold">Tu lealtad tiene sabor.</span>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-5 font-display font-bold">
+                <button onclick="showLegalNotice()" class="hover:text-tt-yellow transition">Términos y Privacidad</button>
+                <a href="#admin" onclick="navigateTo('admin-login')" class="text-tt-cream/60 hover:text-tt-yellow transition">
+                    <i class="fa-solid fa-lock mr-1"></i>Acceso Staff
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- LÓGICA DE APLICACIÓN CON FIREBASE SPARK (CORREO + CONTRASEÑA)         -->
+    <!-- ===================================================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            sendPasswordResetEmail,
+            onAuthStateChanged, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            updateDoc,
+            deleteDoc,
+            collection, 
+            onSnapshot, 
+            serverTimestamp,
+            runTransaction
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================================
+        // 1. INYECCIÓN DE MASCOTA OFICIAL TORTRUCK
+        // =========================================================================
+        function injectMascotIllustrations() {
+            const tpl = document.getElementById('tpl-tortruck-mascot');
+            if (!tpl) return;
+            document.querySelectorAll('[data-mascot-slot]').forEach(slot => {
+                slot.innerHTML = '';
+                slot.appendChild(tpl.content.cloneNode(true));
+            });
+        }
+
+        // =========================================================================
+        // 2. CONFIGURACIÓN OFICIAL DE FIREBASE (TORTRUCK-LEALTAD)
+        // =========================================================================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBpzewIB_8LCq0qiR5pf5Lted5HwKcp7Is",
+            authDomain: "tortruck-lealtad.firebaseapp.com",
+            projectId: "tortruck-lealtad",
+            storageBucket: "tortruck-lealtad.firebasestorage.app",
+            messagingSenderId: "934820446763",
+            appId: "1:934820446763:web:58d0388a291fd7b24da06e"
+        };
+
+        const appId = 'tortruck-lealtad-prod';
+        const getPublicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+        const getPublicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+
+        let app = null, auth = null, db = null, isFirebaseReady = false;
+        let isAdminLoginFlow = false;
+
+        let state = {
+            currentUser: null,
+            userProfile: null,
+            activeCard: null,
+            isEmployee: false,
+            employeeProfile: null,
+            selectedPosCustomer: null,
+            statsPeriod: 'all',
+            allCustomers: [],
+            allCards: [],
+            allPurchases: [],
+            allRewards: [],
+            allAuditLogs: [],
+            qrScannerInstance: null,
+            isScanningQr: false,
+            isSubmittingTx: false
+        };
+
+        function initFirebaseSystem() {
+            try {
+                app = initializeApp(FIREBASE_CONFIG);
+                auth = getAuth(app);
+                auth.languageCode = 'es';
+                db = getFirestore(app);
+                isFirebaseReady = true;
+                setupAuthListener();
+            } catch (error) {
+                console.error("Error inicializando Firebase:", error);
+            }
+        }
+
+        function mapFirebaseAuthError(code) {
+            const map = {
+                'auth/email-already-in-use': 'Este correo electrónico ya está registrado. Inicia sesión.',
+                'auth/invalid-email': 'El formato del correo electrónico no es válido.',
+                'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+                'auth/user-not-found': 'No existe una cuenta registrada con este correo.',
+                'auth/wrong-password': 'La contraseña ingresada es incorrecta.',
+                'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+                'auth/too-many-requests': 'Demasiados intentos fallidos. Intenta de nuevo en unos minutos.'
+            };
+            return map[code] || 'No se pudo completar la autenticación. Verifica tus datos.';
+        }
+
+        // =========================================================================
+        // 3. REGISTRO, INICIO DE SESIÓN Y RECUPERACIÓN (CORREO Y CONTRASEÑA)
+        // =========================================================================
+        window.togglePasswordVisibility = function(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        };
+
+        window.handleRegisterSubmit = async function(e) {
+            e.preventDefault();
+            if (!isFirebaseReady) return;
+
+            const fullName = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-password-confirm').value;
+
+            if (fullName.length < 3) {
+                showToast("Ingresa tu nombre completo.", "error");
+                return;
+            }
+            if (password !== confirmPassword) {
+                showToast("Las contraseñas no coinciden.", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit-register');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando cuenta...';
+
+            try {
+                isAdminLoginFlow = false;
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                const publicQrCode = `TT-${user.uid.slice(0, 8).toUpperCase()}`;
+                const firstCardId = `${user.uid}_cycle_1`;
+
+                await setDoc(getPublicDoc('customers', user.uid), {
+                    uid: user.uid,
+                    fullName,
+                    email,
+                    role: 'user',
+                    accountStatus: 'active',
+                    qrToken: publicQrCode,
+                    currentCycleNumber: 1,
+                    activeCardId: firstCardId,
+                    totalRewardsRedeemed: 0,
+                    acceptedTermsAt: serverTimestamp(),
+                    createdAt: serverTimestamp()
+                });
+
+                await setDoc(getPublicDoc('cards', firstCardId), {
+                    cardId: firstCardId,
+                    customerId: user.uid,
+                    customerName: fullName,
+                    customerEmail: email,
+                    cycleNumber: 1,
+                    stampsCount: 0,
+                    maxStamps: 10,
+                    purchasesInCycle: 0,
+                    status: 'active',
+                    rewardUnlocked: false,
+                    rewardRedeemed: false,
+                    createdAt: serverTimestamp()
+                });
+
+                await setDoc(getPublicDoc('cycles', firstCardId), {
+                    cycleId: firstCardId,
+                    customerId: user.uid,
+                    cycleNumber: 1,
+                    status: 'active',
+                    stampsEarned: 0,
+                    startedAt: serverTimestamp()
+                });
+
+                e.target.reset();
+                showToast("¡Registro exitoso! Bienvenido a TORTRUCK LEALTAD.", "success");
+            } catch (error) {
+                console.error(error);
+                showToast(mapFirebaseAuthError(error.code), "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Crear Mi Cuenta';
+            }
+        };
+
+        window.handleLoginSubmit = async function(e) {
+            e.preventDefault();
+            if (!isFirebaseReady) return;
+
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+
+            const btn = document.getElementById('btn-submit-login');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando sesión...';
+
+            try {
+                isAdminLoginFlow = false;
+                await signInWithEmailAndPassword(auth, email, password);
+                e.target.reset();
+                showToast("¡Qué gusto verte de nuevo en TORTRUCK!", "success");
+            } catch (error) {
+                console.error(error);
+                showToast(mapFirebaseAuthError(error.code), "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket text-tt-red"></i> Iniciar Sesión';
+            }
+        };
+
+        window.handleAdminLoginSubmit = async function(e) {
+            e.preventDefault();
+            if (!isFirebaseReady) return;
+
+            const email = document.getElementById('admin-login-email').value.trim().toLowerCase();
+            const password = document.getElementById('admin-login-password').value;
+
+            const btn = document.getElementById('btn-submit-admin-login');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando permisos...';
+
+            try {
+                isAdminLoginFlow = true;
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                const empSnap = await getDoc(getPublicDoc('employees', cred.user.uid));
+
+                if (!empSnap.exists() || empSnap.data().active !== true) {
+                    await signOut(auth);
+                    isAdminLoginFlow = false;
+                    showToast("Acceso denegado: Esta cuenta no tiene privilegios administrativos.", "error");
+                    return;
+                }
+
+                e.target.reset();
+                showToast("Acceso administrativo verificado.", "success");
+            } catch (error) {
+                console.error(error);
+                isAdminLoginFlow = false;
+                showToast(mapFirebaseAuthError(error.code), "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Entrar al Panel Administrativo";
+            }
+        };
+
+        window.handlePasswordResetSubmit = async function(e) {
+            e.preventDefault();
+            if (!isFirebaseReady) return;
+
+            const email = document.getElementById('reset-email-input').value.trim().toLowerCase();
+            const btn = document.getElementById('btn-send-reset');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando correo...';
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                toggleResetModal(false);
+                e.target.reset();
+                showToast("Enlace enviado. Revisa tu bandeja de entrada o spam.", "success");
+            } catch (error) {
+                console.error(error);
+                showToast(mapFirebaseAuthError(error.code), "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Enviar Enlace de Recuperación";
+            }
+        };
+
+        window.logoutUser = async function() {
+            if (!auth) return;
+            await signOut(auth);
+            state.isEmployee = false;
+            state.employeeProfile = null;
+            state.userProfile = null;
+            showToast("Sesión cerrada correctamente.", "info");
+            navigateTo('landing');
+        };
+
+        // =========================================================================
+        // 4. SINCRONIZACIÓN EN TIEMPO REAL Y PROTECCIÓN DE RUTAS
+        // =========================================================================
+        function setupAuthListener() {
+            onAuthStateChanged(auth, async (user) => {
+                state.currentUser = user;
+                if (!user) {
+                    document.getElementById('nav-guest').classList.remove('hidden');
+                    document.getElementById('nav-client').classList.add('hidden');
+                    if (window.location.hash === '#admin') {
+                        navigateTo('admin-login');
+                    }
+                    return;
+                }
+
+                document.getElementById('nav-guest').classList.add('hidden');
+                document.getElementById('nav-client').classList.remove('hidden');
+
+                let isEmp = false;
+                try {
+                    const empSnap = await getDoc(getPublicDoc('employees', user.uid));
+                    if (empSnap.exists() && empSnap.data().active === true) {
+                        isEmp = true;
+                        state.isEmployee = true;
+                        state.employeeProfile = empSnap.data();
+                        document.getElementById('btn-switch-admin').classList.remove('hidden');
+                        document.getElementById('admin-role-badge').textContent = `Admin: ${empSnap.data().name || user.email}`;
+                        subscribeAdminCollections();
+                    } else {
+                        state.isEmployee = false;
+                        document.getElementById('btn-switch-admin').classList.add('hidden');
+                    }
+                } catch (e) {
+                    state.isEmployee = false;
+                    document.getElementById('btn-switch-admin').classList.add('hidden');
+                }
+
+                const openAdmin = isEmp && (isAdminLoginFlow || window.location.hash === '#admin');
+                subscribeClientProfileAndCard(user, openAdmin);
+            });
+        }
+
+        function subscribeClientProfileAndCard(user, openAdminDirectly = false) {
+            let activeCardUnsub = null;
+
+            onSnapshot(getPublicDoc('customers', user.uid), (docSnap) => {
+                if (!docSnap.exists()) {
+                    if (openAdminDirectly) navigateTo('admin-dashboard');
+                    return;
+                }
+                const profile = docSnap.data();
+                state.userProfile = profile;
+
+                document.getElementById('client-display-name').textContent = profile.fullName;
+                document.getElementById('card-holder-name').textContent = profile.fullName;
+                document.getElementById('client-display-email').textContent = profile.email || user.email;
+                document.getElementById('client-cycle-number').textContent = profile.currentCycleNumber || 1;
+                document.getElementById('card-cycle-num').textContent = profile.currentCycleNumber || 1;
+                document.getElementById('client-public-code').textContent = profile.qrToken;
+
+                const disabledBanner = document.getElementById('account-disabled-banner');
+                if (profile.accountStatus === 'disabled') {
+                    disabledBanner.classList.remove('hidden');
+                } else {
+                    disabledBanner.classList.add('hidden');
+                }
+
+                renderClientQRCode(profile.qrToken);
+
+                if (profile.activeCardId) {
+                    if (activeCardUnsub) activeCardUnsub();
+                    activeCardUnsub = onSnapshot(getPublicDoc('cards', profile.activeCardId), (cardSnap) => {
+                        if (!cardSnap.exists()) return;
+                        state.activeCard = cardSnap.data();
+                        renderClientDigitalCard(state.activeCard);
+                    });
+                }
+            });
+
+            onSnapshot(getPublicCol('purchases'), (snap) => {
+                const list = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(item => item.customerId === user.uid)
+                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderClientPurchasesHistory(list);
+            });
+
+            onSnapshot(getPublicCol('rewards'), (snap) => {
+                const list = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(item => item.customerId === user.uid)
+                    .sort((a, b) => (b.redeemedAt?.seconds || 0) - (a.redeemedAt?.seconds || 0));
+                renderClientRewardsHistory(list);
+            });
+
+            onSnapshot(getPublicCol('cards'), (snap) => {
+                const list = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(item => item.customerId === user.uid)
+                    .sort((a, b) => (b.cycleNumber || 1) - (a.cycleNumber || 1));
+                renderClientCyclesHistory(list);
+            });
+
+            if (openAdminDirectly) {
+                navigateTo('admin-dashboard');
+            } else {
+                navigateTo('client-dashboard');
+            }
+        }
+
+        function renderClientDigitalCard(card) {
+            const stamps = Math.min(10, Math.max(0, card.stampsCount || 0));
+            const remaining = 10 - stamps;
+            const pct = (stamps / 10) * 100;
+
+            document.getElementById('client-stamps-badge').textContent = `${stamps} / 10 Sellos`;
+            document.getElementById('client-progress-bar').style.width = `${pct}%`;
+
+            const banner = document.getElementById('reward-unlocked-banner');
+            const statusPill = document.getElementById('card-reward-status');
+
+            if (stamps >= 10 && !card.rewardRedeemed) {
+                document.getElementById('client-stamps-remaining').textContent = "¡TARJETA COMPLETA!";
+                banner.classList.remove('hidden');
+                statusPill.textContent = "¡HAMBURGUESA GRATIS DISPONIBLE!";
+                statusPill.className = "inline-block mt-0.5 px-3 py-1 rounded-lg bg-tt-red text-tt-cream font-display font-extrabold text-xs";
+            } else {
+                document.getElementById('client-stamps-remaining').textContent = `Faltan ${remaining} sello${remaining === 1 ? '' : 's'}`;
+                banner.classList.add('hidden');
+                statusPill.textContent = `Faltan ${remaining} sellos para tu premio`;
+                statusPill.className = "inline-block mt-0.5 px-3 py-1 rounded-lg bg-tt-ink text-tt-cream font-display font-bold text-xs";
+            }
+
+            const grid = document.getElementById('stamps-grid');
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= 10; i++) {
+                const earned = i <= stamps;
+                const isGoal = i === 10;
+                const cell = document.createElement('div');
+
+                if (earned) {
+                    cell.className = "aspect-square rounded-2xl stamp-earned flex flex-col items-center justify-center animate-stamp-pop";
+                    cell.innerHTML = `
+                        <i class="fa-solid ${isGoal ? 'fa-crown text-tt-yellow' : 'fa-burger text-tt-red'} text-xl sm:text-2xl"></i>
+                        <span class="text-[10px] font-display font-extrabold text-tt-ink mt-1">#${i}</span>
+                    `;
+                } else if (isGoal) {
+                    cell.className = "aspect-square rounded-2xl bg-tt-red/15 border-2 border-dashed border-tt-red flex flex-col items-center justify-center";
+                    cell.innerHTML = `
+                        <i class="fa-solid fa-gift text-tt-red text-lg"></i>
+                        <span class="text-[9px] font-display font-extrabold text-tt-red mt-0.5">GRATIS</span>
+                    `;
+                } else {
+                    cell.className = "aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm text-tt-ink/60";
+                    cell.textContent = i;
+                }
+                grid.appendChild(cell);
+            }
+        }
+
+        let lastRenderedQr = "";
+        function renderClientQRCode(qrToken) {
+            if (!qrToken || qrToken === lastRenderedQr) return;
+            const container = document.getElementById('client-qrcode');
+            container.innerHTML = '';
+            new QRCode(container, {
+                text: qrToken,
+                width: 170,
+                height: 170,
+                colorDark: "#132227",
+                colorLight: "#FBF5E6",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            lastRenderedQr = qrToken;
+        }
+
+        window.downloadClientQrImage = function() {
+            const canvas = document.querySelector('#client-qrcode canvas');
+            const img = document.querySelector('#client-qrcode img');
+            const dataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+            if (!dataUrl) {
+                showToast("Generando código QR, intenta en un segundo.", "info");
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `TORTRUCK-QR-${state.userProfile?.qrToken || 'LEALTAD'}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Código QR guardado en tu dispositivo.", "success");
+        };
+
+        function renderClientPurchasesHistory(purchases) {
+            document.getElementById('client-purchases-count').textContent = purchases.length;
+            const container = document.getElementById('client-purchases-list');
+            if (purchases.length === 0) {
+                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">Aún no tienes compras registradas.</p>';
+                return;
+            }
+            container.innerHTML = purchases.map(p => {
+                const dateStr = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Reciente';
+                const badgeClass = p.stampsAwarded > 0
+                    ? 'bg-tt-yellow border-2 border-tt-ink text-tt-red'
+                    : 'bg-tt-cream border-2 border-tt-ink/40 text-tt-ink/60';
+                return `
+                    <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-3">
+                        <div>
+                            <p class="font-display font-extrabold text-sm text-tt-ink">Subtotal: $${Number(p.subtotal).toFixed(2)} MXN</p>
+                            <p class="text-[11px] font-semibold text-tt-ink/70">${dateStr} • Ciclo #${p.cycleNumber}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-xl text-xs font-display font-extrabold ${badgeClass}">
+                            +${p.stampsAwarded} Sello${p.stampsAwarded === 1 ? '' : 's'}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderClientRewardsHistory(rewards) {
+            document.getElementById('client-rewards-count').textContent = rewards.length;
+            const container = document.getElementById('client-rewards-list');
+            if (rewards.length === 0) {
+                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">Completa 10 sellos para disfrutar tu primera Hamburguesa Clásica Gratis.</p>';
+                return;
+            }
+            container.innerHTML = rewards.map(r => {
+                const dateStr = r.redeemedAt?.toDate ? r.redeemedAt.toDate().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Validado';
+                return `
+                    <div class="p-3.5 rounded-2xl halftone-yellow border-2 border-tt-ink flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-tt-red text-tt-cream border-2 border-tt-ink flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-burger"></i>
+                            </div>
+                            <div>
+                                <p class="font-display font-extrabold text-sm text-tt-ink">Hamburguesa Clásica Gratis</p>
+                                <p class="text-[11px] font-semibold text-tt-ink/80">Canjeada el ${dateStr} • Ciclo #${r.cycleNumber}</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-tt-cream border-2 border-tt-ink text-xs font-display font-extrabold text-tt-ink">Canjeada</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderClientCyclesHistory(cards) {
+            document.getElementById('client-cycles-count').textContent = cards.length;
+            const container = document.getElementById('client-cycles-list');
+            if (cards.length === 0) {
+                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">Ciclo #1 activo.</p>';
+                return;
+            }
+            container.innerHTML = cards.map(c => {
+                const isCompleted = c.rewardRedeemed;
+                const badge = isCompleted
+                    ? '<span class="px-2.5 py-0.5 rounded-md bg-tt-ink text-tt-cream text-[11px] font-display font-bold">Completado y Canjeado</span>'
+                    : `<span class="px-2.5 py-0.5 rounded-md bg-tt-yellow border border-tt-ink text-tt-ink text-[11px] font-display font-extrabold">Activo (${c.stampsCount}/10)</span>`;
+                return `
+                    <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-2">
+                        <div>
+                            <p class="font-display font-extrabold text-sm text-tt-ink">Ciclo #${c.cycleNumber}</p>
+                            <p class="text-[11px] font-semibold text-tt-ink/70">${c.purchasesInCycle || 0} compra(s) registrada(s)</p>
+                        </div>
+                        ${badge}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // =========================================================================
+        // 5. MOTOR DE REGLAS OFICIALES DE FIDELIZACIÓN
+        // =========================================================================
+        function calculateOfficialStamps(subtotalProducts, activeCard) {
+            const subtotal = Number(subtotalProducts);
+            if (isNaN(subtotal) || subtotal < 150) {
+                return {
+                    eligible: false,
+                    stampsToAward: 0,
+                    reason: "Subtotal inferior al mínimo de $150.00 MXN (No genera sellos)."
+                };
+            }
+
+            if (activeCard.stampsCount >= 10 && !activeCard.rewardRedeemed) {
+                return {
+                    eligible: false,
+                    stampsToAward: 0,
+                    reason: "Tarjeta completa (10/10). Debe validarse el canje antes de acumular en nuevo ciclo."
+                };
+            }
+
+            const isFirstEligibleOfCycle = (activeCard.stampsCount === 0);
+            const rawAward = isFirstEligibleOfCycle ? 2 : 1;
+            const spaceLeft = 10 - activeCard.stampsCount;
+            const finalAward = Math.min(rawAward, spaceLeft);
+
+            return {
+                eligible: true,
+                stampsToAward: finalAward,
+                reason: isFirstEligibleOfCycle
+                    ? "Primera compra elegible (≥ $150 MXN) del ciclo: +2 sellos."
+                    : "Compra elegible posterior (≥ $150 MXN): +1 sello."
+            };
+        }
+
+        // =========================================================================
+        // 6. PANEL ADMINISTRATIVO (ESTADÍSTICAS, USUARIOS, COMPRAS Y CANJES)
+        // =========================================================================
+        function subscribeAdminCollections() {
+            onSnapshot(getPublicCol('customers'), (snap) => {
+                state.allCustomers = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderAdminDashboardStats();
+                renderRecentRegistrations();
+                renderAdminCustomersTable();
+            });
+            onSnapshot(getPublicCol('cards'), (snap) => {
+                state.allCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderAdminDashboardStats();
+                renderAdminPendingRewards();
+                renderAdminCustomersTable();
+            });
+            onSnapshot(getPublicCol('purchases'), (snap) => {
+                state.allPurchases = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderAdminDashboardStats();
+            });
+            onSnapshot(getPublicCol('rewards'), (snap) => {
+                state.allRewards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderAdminDashboardStats();
+            });
+            onSnapshot(getPublicCol('audit_logs'), (snap) => {
+                state.allAuditLogs = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderAdminReports();
+            });
+        }
+
+        window.setStatsPeriod = function(period) {
+            state.statsPeriod = period;
+            document.querySelectorAll('.period-btn').forEach(b => {
+                b.className = "period-btn px-3 py-1 rounded-lg text-xs font-display font-bold text-tt-ink";
+            });
+            document.getElementById(`period-${period}`).className = "period-btn px-3 py-1 rounded-lg text-xs font-display font-bold bg-tt-ink text-tt-cream";
+            renderAdminDashboardStats();
+        };
+
+        function isWithinPeriod(timestamp, period) {
+            if (period === 'all' || !timestamp?.toDate) return true;
+            const date = timestamp.toDate();
+            const now = new Date();
+            const diffDays = (now - date) / (1000 * 60 * 60 * 24);
+            if (period === 'day') return date.toDateString() === now.toDateString();
+            if (period === 'week') return diffDays <= 7;
+            if (period === 'month') return diffDays <= 30;
+            return true;
+        }
+
+        function renderAdminDashboardStats() {
+            const p = state.statsPeriod;
+            const filteredUsers = state.allCustomers.filter(item => isWithinPeriod(item.createdAt, p));
+            const filteredPurchases = state.allPurchases.filter(item => isWithinPeriod(item.createdAt, p));
+            const filteredRewards = state.allRewards.filter(item => isWithinPeriod(item.redeemedAt, p));
+            const stampsGiven = filteredPurchases.reduce((acc, cur) => acc + (cur.stampsAwarded || 0), 0);
+            const pendingCards = state.allCards.filter(c => c.stampsCount >= 10 && !c.rewardRedeemed);
+            const completedCards = state.allCards.filter(c => c.stampsCount >= 10);
+
+            document.getElementById('stat-total-clients').textContent = filteredUsers.length;
+            document.getElementById('stat-total-purchases').textContent = filteredPurchases.length;
+            document.getElementById('stat-total-stamps').textContent = stampsGiven;
+            document.getElementById('stat-completed-cards').textContent = completedCards.length;
+            document.getElementById('stat-pending-rewards').textContent = pendingCards.length;
+            document.getElementById('stat-redeemed-rewards').textContent = filteredRewards.length;
+
+            const badge = document.getElementById('badge-pending-rewards');
+            if (pendingCards.length > 0) {
+                badge.textContent = pendingCards.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderRecentRegistrations() {
+            const container = document.getElementById('recent-registrations-list');
+            const recent = state.allCustomers.slice(0, 6);
+            if (recent.length === 0) {
+                container.innerHTML = '<p class="text-xs text-tt-ink/60">Sin usuarios registrados aún.</p>';
+                return;
+            }
+            container.innerHTML = recent.map(u => {
+                const dateStr = u.createdAt?.toDate ? u.createdAt.toDate().toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Reciente';
+                return `
+                    <div class="p-3 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-3 text-xs">
+                        <div>
+                            <strong class="font-display text-sm text-tt-ink block">${u.fullName}</strong>
+                            <span class="text-tt-ink/75">${u.email || '---'}</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-white border border-tt-ink font-mono text-[11px]">${dateStr}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.toggleQrScanner = async function() {
+            const btn = document.getElementById('btn-toggle-scanner');
+            if (state.isScanningQr && state.qrScannerInstance) {
+                await state.qrScannerInstance.stop();
+                state.isScanningQr = false;
+                btn.textContent = "Activar Cámara";
+                document.getElementById('qr-reader').innerHTML = "Cámara inactiva";
+                return;
+            }
+            try {
+                state.qrScannerInstance = new Html5Qrcode("qr-reader");
+                await state.qrScannerInstance.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 210, height: 210 } },
+                    (decodedText) => {
+                        const found = state.allCustomers.find(c => c.qrToken === decodedText.trim() || c.uid === decodedText.trim());
+                        if (found) {
+                            selectCustomerForPos(found.uid);
+                            showToast(`QR verificado: ${found.fullName}`, "success");
+                            window.toggleQrScanner();
+                        } else {
+                            showToast("Código QR no reconocido.", "error");
+                        }
+                    }
+                );
+                state.isScanningQr = true;
+                btn.textContent = "Detener Cámara";
+            } catch (err) {
+                showToast("No se pudo acceder a la cámara.", "error");
+            }
+        };
+
+        window.searchClientForPurchase = function(query) {
+            const container = document.getElementById('admin-search-results');
+            const q = query.trim().toLowerCase();
+            if (!q) { container.innerHTML = ''; return; }
+
+            const matches = state.allCustomers.filter(c => 
+                (c.fullName || '').toLowerCase().includes(q) ||
+                (c.email || '').toLowerCase().includes(q) ||
+                (c.qrToken || '').toLowerCase().includes(q)
+            ).slice(0, 5);
+
+            if (matches.length === 0) {
+                container.innerHTML = '<p class="text-xs text-tt-ink/60 py-1">Sin coincidencias.</p>';
+                return;
+            }
+
+            container.innerHTML = matches.map(c => `
+                <button type="button" onclick="selectCustomerForPos('${c.uid}')" 
+                        class="w-full text-left p-2.5 rounded-xl bg-white border-2 border-tt-ink hover:bg-tt-yellow transition flex justify-between items-center text-xs">
+                    <div>
+                        <strong class="block text-tt-ink font-display">${c.fullName}</strong>
+                        <span class="text-tt-ink/70">${c.email || ''}</span>
+                    </div>
+                    <span class="font-mono font-bold text-tt-red">${c.qrToken}</span>
+                </button>
+            `).join('');
+        };
+
+        window.selectCustomerForPos = function(uid) {
+            const customer = state.allCustomers.find(c => c.uid === uid);
+            if (!customer) return;
+            if (customer.accountStatus === 'disabled') {
+                showToast("Este usuario está deshabilitado.", "error");
+                return;
+            }
+            const activeCard = state.allCards.find(card => card.cardId === customer.activeCardId) || {
+                cardId: `${uid}_cycle_${customer.currentCycleNumber || 1}`,
+                cycleNumber: customer.currentCycleNumber || 1,
+                stampsCount: 0,
+                rewardRedeemed: false
+            };
+
+            state.selectedPosCustomer = { customer, card: activeCard };
+            document.getElementById('selected-client-purchase-box').classList.remove('hidden');
+            document.getElementById('last-purchase-receipt').classList.add('hidden');
+            document.getElementById('pos-client-name').textContent = customer.fullName;
+            document.getElementById('pos-client-email').textContent = customer.email || '---';
+            document.getElementById('pos-client-cycle').textContent = activeCard.cycleNumber;
+            document.getElementById('pos-client-stamps').textContent = `${activeCard.stampsCount} / 10`;
+            previewStampCalculation();
+        };
+
+        window.previewStampCalculation = function() {
+            if (!state.selectedPosCustomer) return;
+            const subtotal = parseFloat(document.getElementById('pos-subtotal').value || 0);
+            const extras = parseFloat(document.getElementById('pos-extras').value || 0);
+            const result = calculateOfficialStamps(subtotal, state.selectedPosCustomer.card);
+            const extraNote = extras > 0 ? ` (Se ignoran $${extras.toFixed(2)} de envío/propina)` : '';
+            document.getElementById('pos-rule-explanation').textContent = result.reason + extraNote;
+            const badgeEl = document.getElementById('pos-rule-stamps-badge');
+            badgeEl.textContent = `+${result.stampsToAward} Sello${result.stampsToAward === 1 ? '' : 's'}`;
+            badgeEl.className = result.stampsToAward > 0
+                ? "px-4 py-2 rounded-xl font-display font-extrabold text-sm bg-tt-yellow border-2 border-tt-ink text-tt-red shrink-0"
+                : "px-4 py-2 rounded-xl font-display font-extrabold text-sm bg-white border-2 border-tt-ink text-tt-ink shrink-0";
+        };
+
+        window.submitPurchaseRegistration = async function(e) {
+            e.preventDefault();
+            if (!state.isEmployee || !state.selectedPosCustomer || state.isSubmittingTx) return;
+
+            const subtotal = parseFloat(document.getElementById('pos-subtotal').value);
+            const extras = parseFloat(document.getElementById('pos-extras').value || 0);
+            const ticketRef = document.getElementById('pos-ticket-ref').value.trim();
+            if (isNaN(subtotal) || subtotal <= 0) return;
+
+            state.isSubmittingTx = true;
+            const btn = document.getElementById('btn-submit-purchase');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+
+            try {
+                const { customer, card } = state.selectedPosCustomer;
+                const timeBucket = Math.floor(Date.now() / 15000);
+                const idempotencyKey = ticketRef 
+                    ? `TK_${ticketRef.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}`
+                    : `PUR_${customer.uid}_${card.cycleNumber}_${Math.round(subtotal)}_${timeBucket}`;
+
+                let txResultData = null;
+
+                await runTransaction(db, async (transaction) => {
+                    const purchaseDocRef = getPublicDoc('purchases', idempotencyKey);
+                    const cardDocRef = getPublicDoc('cards', card.cardId);
+
+                    const existingPurchase = await transaction.get(purchaseDocRef);
+                    if (existingPurchase.exists()) {
+                        throw new Error("Esta compra o folio ya fue registrada previamente. No se duplicarán sellos.");
+                    }
+
+                    const freshCardSnap = await transaction.get(cardDocRef);
+                    if (!freshCardSnap.exists()) throw new Error("Tarjeta no encontrada.");
+                    const freshCard = freshCardSnap.data();
+
+                    const calc = calculateOfficialStamps(subtotal, freshCard);
+                    if (freshCard.stampsCount >= 10 && !freshCard.rewardRedeemed) {
+                        throw new Error("El cliente ya tiene 10 sellos. Debe canjear su Hamburguesa Clásica antes.");
+                    }
+
+                    const newStampsTotal = freshCard.stampsCount + calc.stampsToAward;
+                    const rewardNowUnlocked = newStampsTotal >= 10;
+
+                    transaction.set(purchaseDocRef, {
+                        purchaseId: idempotencyKey,
+                        customerId: customer.uid,
+                        customerName: customer.fullName,
+                        cardId: freshCard.cardId,
+                        cycleNumber: freshCard.cycleNumber,
+                        subtotal,
+                        excludedExtras: isNaN(extras) ? 0 : extras,
+                        eligible: calc.eligible,
+                        stampsAwarded: calc.stampsToAward,
+                        ticketRef: ticketRef || null,
+                        registeredByUid: state.currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+
+                    transaction.update(cardDocRef, {
+                        stampsCount: newStampsTotal,
+                        purchasesInCycle: (freshCard.purchasesInCycle || 0) + 1,
+                        rewardUnlocked: rewardNowUnlocked,
+                        status: rewardNowUnlocked ? 'reward_available' : 'active',
+                        updatedAt: serverTimestamp()
+                    });
+
+                    const auditRef = doc(getPublicCol('audit_logs'));
+                    transaction.set(auditRef, {
+                        action: 'COMPRA_REGISTRADA',
+                        customerId: customer.uid,
+                        customerName: customer.fullName,
+                        details: `Subtotal $${subtotal.toFixed(2)} MXN → +${calc.stampsToAward} sellos (Total: ${newStampsTotal}/10)`,
+                        employeeUid: state.currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+
+                    txResultData = { subtotal, eligible: calc.eligible, stampsAwarded: calc.stampsToAward, newStampsTotal };
+                });
+
+                document.getElementById('last-purchase-receipt').classList.remove('hidden');
+                document.getElementById('rec-subtotal').textContent = `$${txResultData.subtotal.toFixed(2)} MXN`;
+                document.getElementById('rec-eligible').textContent = txResultData.eligible ? 'Sí (≥ $150)' : 'No (< $150)';
+                document.getElementById('rec-stamps').textContent = `+${txResultData.stampsAwarded}`;
+                document.getElementById('rec-total').textContent = `${txResultData.newStampsTotal} / 10`;
+
+                state.selectedPosCustomer.card.stampsCount = txResultData.newStampsTotal;
+                document.getElementById('pos-client-stamps').textContent = `${txResultData.newStampsTotal} / 10`;
+                document.getElementById('pos-subtotal').value = '';
+                document.getElementById('pos-extras').value = '';
+                document.getElementById('pos-ticket-ref').value = '';
+                previewStampCalculation();
+                showToast(`¡Compra registrada! +${txResultData.stampsAwarded} sellos otorgados.`, "success");
+            } catch (error) {
+                console.error(error);
+                showToast(error.message || "Error al registrar compra.", "error");
+            } finally {
+                state.isSubmittingTx = false;
+                btn.disabled = false;
+                btn.textContent = "Confirmar y Registrar Compra";
+            }
+        };
+
+        function renderAdminPendingRewards() {
+            const pending = state.allCards.filter(c => c.stampsCount >= 10 && !c.rewardRedeemed);
+            const container = document.getElementById('admin-pending-rewards-list');
+
+            if (pending.length === 0) {
+                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">No hay recompensas pendientes de canje.</p>';
+                return;
+            }
+
+            container.innerHTML = pending.map(card => `
+                <div class="p-5 rounded-3xl halftone-yellow border-3 border-tt-ink flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-0.5 rounded-md bg-tt-red text-tt-cream border border-tt-ink text-xs font-display font-extrabold">10 / 10 SELLOS</span>
+                        <h4 class="font-display font-extrabold text-xl text-tt-ink mt-1">${card.customerName}</h4>
+                        <p class="text-xs font-bold text-tt-ink/80">${card.customerEmail || '---'} • Ciclo #${card.cycleNumber}</p>
+                    </div>
+                    <button onclick="confirmRedeemReward('${card.customerId}', '${card.cardId}', '${card.customerName}')" 
+                            class="px-5 py-3 rounded-2xl bg-tt-red text-tt-cream font-display font-extrabold text-sm comic-btn">
+                        <i class="fa-solid fa-check-double mr-1.5"></i>Validar Entrega
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.confirmRedeemReward = function(customerId, cardId, customerName) {
+            openConfirmModal(
+                "Validar Hamburguesa Clásica Gratis",
+                `¿Confirmas la entrega de la Hamburguesa Clásica Gratis para ${customerName}? Se cerrará el ciclo actual y se abrirá un nuevo ciclo con 0 sellos.`,
+                async () => {
+                    await executeRewardRedemption(customerId, cardId);
+                }
+            );
+        };
+
+        async function executeRewardRedemption(customerId, cardId) {
+            if (!state.isEmployee) return;
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const customerRef = getPublicDoc('customers', customerId);
+                    const currentCardRef = getPublicDoc('cards', cardId);
+
+                    const custSnap = await transaction.get(customerRef);
+                    const cardSnap = await transaction.get(currentCardRef);
+
+                    if (!custSnap.exists() || !cardSnap.exists()) throw new Error("Registro no encontrado.");
+                    const customer = custSnap.data();
+                    const card = cardSnap.data();
+
+                    if (card.rewardRedeemed || card.stampsCount < 10) {
+                        throw new Error("Esta recompensa ya fue canjeada o no cumple los 10 sellos.");
+                    }
+
+                    const nextCycleNum = (customer.currentCycleNumber || 1) + 1;
+                    const nextCardId = `${customerId}_cycle_${nextCycleNum}`;
+                    const rewardDocId = `REW_${cardId}`;
+
+                    transaction.update(currentCardRef, {
+                        rewardRedeemed: true,
+                        status: 'completed',
+                        redeemedAt: serverTimestamp(),
+                        redeemedByUid: state.currentUser.uid
+                    });
+
+                    transaction.set(getPublicDoc('rewards', rewardDocId), {
+                        rewardId: rewardDocId,
+                        customerId,
+                        customerName: customer.fullName,
+                        cardId,
+                        cycleNumber: card.cycleNumber,
+                        rewardName: "Hamburguesa Clásica Gratis",
+                        validatedByUid: state.currentUser.uid,
+                        redeemedAt: serverTimestamp()
+                    });
+
+                    transaction.set(getPublicDoc('cards', nextCardId), {
+                        cardId: nextCardId,
+                        customerId,
+                        customerName: customer.fullName,
+                        customerEmail: customer.email || '',
+                        cycleNumber: nextCycleNum,
+                        stampsCount: 0,
+                        maxStamps: 10,
+                        purchasesInCycle: 0,
+                        status: 'active',
+                        rewardUnlocked: false,
+                        rewardRedeemed: false,
+                        createdAt: serverTimestamp()
+                    });
+
+                    transaction.update(customerRef, {
+                        currentCycleNumber: nextCycleNum,
+                        activeCardId: nextCardId,
+                        totalRewardsRedeemed: (customer.totalRewardsRedeemed || 0) + 1
+                    });
+
+                    const auditRef = doc(getPublicCol('audit_logs'));
+                    transaction.set(auditRef, {
+                        action: 'RECOMPENSA_CANJEADA',
+                        customerId,
+                        customerName: customer.fullName,
+                        details: `Canje Hamburguesa Clásica Gratis (Ciclo #${card.cycleNumber}). Nuevo Ciclo #${nextCycleNum} iniciado en 0 sellos.`,
+                        employeeUid: state.currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                });
+
+                showToast("Canje validado. Nuevo ciclo creado en 0 sellos.", "success");
+            } catch (error) {
+                console.error(error);
+                showToast(error.message || "No se pudo validar el canje.", "error");
+            }
+        }
+
+        // =========================================================================
+        // 7. GESTIÓN DE USUARIOS (DESHABILITAR / ELIMINAR PERFIL CON CONFIRMACIÓN)
+        // =========================================================================
+        window.toggleUserAccountStatus = function(uid, currentStatus, fullName) {
+            if (!state.isEmployee) return;
+            const willDisable = currentStatus !== 'disabled';
+            openConfirmModal(
+                willDisable ? "Deshabilitar Cuenta de Usuario" : "Reactivar Cuenta de Usuario",
+                willDisable
+                    ? `¿Deseas deshabilitar la cuenta de ${fullName}? No podrá acumular sellos mientras esté suspendida.`
+                    : `¿Deseas reactivar la cuenta de ${fullName}?`,
+                async () => {
+                    try {
+                        const newStatus = willDisable ? 'disabled' : 'active';
+                        await updateDoc(getPublicDoc('customers', uid), {
+                            accountStatus: newStatus,
+                            updatedAt: serverTimestamp()
+                        });
+                        await setDoc(doc(getPublicCol('audit_logs')), {
+                            action: willDisable ? 'USUARIO_DESHABILITADO' : 'USUARIO_REACTIVADO',
+                            customerId: uid,
+                            customerName: fullName,
+                            details: `Estado cambiado a: ${newStatus}`,
+                            employeeUid: state.currentUser.uid,
+                            createdAt: serverTimestamp()
+                        });
+                        showToast(willDisable ? "Cuenta deshabilitada." : "Cuenta reactivada.", "success");
+                    } catch (err) {
+                        showToast("No se pudo actualizar el estado del usuario.", "error");
+                    }
+                }
+            );
+        };
+
+        window.deleteUserProfile = function(uid, fullName) {
+            if (!state.isEmployee) return;
+            openConfirmModal(
+                "Eliminar Perfil de Usuario",
+                `¿Estás seguro de eliminar el perfil y tarjeta de ${fullName} de la base de datos? Esta acción no se puede deshacer.`,
+                async () => {
+                    try {
+                        await deleteDoc(getPublicDoc('customers', uid));
+                        await setDoc(doc(getPublicCol('audit_logs')), {
+                            action: 'USUARIO_ELIMINADO',
+                            customerId: uid,
+                            customerName: fullName,
+                            details: `Perfil eliminado del directorio por administración.`,
+                            employeeUid: state.currentUser.uid,
+                            createdAt: serverTimestamp()
+                        });
+                        showToast("Perfil eliminado correctamente.", "success");
+                    } catch (err) {
+                        showToast("No se pudo eliminar el perfil.", "error");
+                    }
+                }
+            );
+        };
+
+        let customerSearchFilter = "";
+        window.filterAdminCustomers = function(val) {
+            customerSearchFilter = val.trim().toLowerCase();
+            renderAdminCustomersTable();
+        };
+
+        function renderAdminCustomersTable() {
+            const filtered = state.allCustomers.filter(c => 
+                !customerSearchFilter ||
+                (c.fullName || '').toLowerCase().includes(customerSearchFilter) ||
+                (c.email || '').toLowerCase().includes(customerSearchFilter)
+            );
+
+            const tbody = document.getElementById('admin-customers-table-body');
+            const mobileCards = document.getElementById('admin-customers-mobile-cards');
+
+            tbody.innerHTML = filtered.map(c => {
+                const card = state.allCards.find(x => x.cardId === c.activeCardId) || { stampsCount: 0 };
+                const regDate = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : '---';
+                const isDisabled = c.accountStatus === 'disabled';
+                const statusBadge = isDisabled
+                    ? '<span class="px-2 py-0.5 rounded bg-tt-red text-tt-cream text-[11px] font-display font-bold">Deshabilitada</span>'
+                    : '<span class="px-2 py-0.5 rounded bg-tt-teal text-tt-cream text-[11px] font-display font-bold">Activa</span>';
+
+                return `
+                    <tr class="hover:bg-tt-cream/60">
+                        <td class="py-3.5 px-3">
+                            <strong class="font-display font-bold text-tt-ink block">${c.fullName}</strong>
+                            <span class="text-xs text-tt-ink/70">${c.email || '---'}</span>
+                        </td>
+                        <td class="py-3.5 px-3 text-xs text-tt-ink/80">${regDate}</td>
+                        <td class="py-3.5 px-3 font-display font-extrabold text-tt-red">${card.stampsCount} / 10</td>
+                        <td class="py-3.5 px-3">${statusBadge}</td>
+                        <td class="py-3.5 px-3 text-right space-x-1">
+                            <button onclick="openCustomerExpediente('${c.uid}')" class="px-2.5 py-1.5 rounded-lg bg-tt-yellow border-2 border-tt-ink font-display font-bold text-xs" title="Ver Perfil">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}', '${c.fullName}')" class="px-2.5 py-1.5 rounded-lg bg-white border-2 border-tt-ink font-display font-bold text-xs" title="${isDisabled ? 'Reactivar' : 'Deshabilitar'}">
+                                <i class="fa-solid ${isDisabled ? 'fa-user-check text-tt-tealDark' : 'fa-user-slash text-tt-red'}"></i>
+                            </button>
+                            <button onclick="deleteUserProfile('${c.uid}', '${c.fullName}')" class="px-2.5 py-1.5 rounded-lg bg-tt-red text-tt-cream border-2 border-tt-ink font-display font-bold text-xs" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            mobileCards.innerHTML = filtered.map(c => {
+                const card = state.allCards.find(x => x.cardId === c.activeCardId) || { stampsCount: 0 };
+                const isDisabled = c.accountStatus === 'disabled';
+                return `
+                    <div class="p-4 rounded-2xl bg-tt-cream border-2 border-tt-ink space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="font-display font-extrabold text-base text-tt-ink">${c.fullName}</p>
+                                <p class="text-xs text-tt-ink/75">${c.email || '---'}</p>
+                                <span class="inline-block mt-1 text-xs font-display font-extrabold text-tt-red">${card.stampsCount} / 10 sellos</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-display font-bold ${isDisabled ? 'bg-tt-red text-tt-cream' : 'bg-tt-teal text-tt-cream'}">
+                                ${isDisabled ? 'Deshabilitada' : 'Activa'}
+                            </span>
+                        </div>
+                        <div class="flex gap-2 pt-2 border-t border-tt-ink/15">
+                            <button onclick="openCustomerExpediente('${c.uid}')" class="flex-1 py-2 rounded-xl bg-tt-yellow border-2 border-tt-ink text-xs font-display font-bold">Perfil</button>
+                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}', '${c.fullName}')" class="flex-1 py-2 rounded-xl bg-white border-2 border-tt-ink text-xs font-display font-bold">
+                                ${isDisabled ? 'Reactivar' : 'Suspender'}
+                            </button>
+                            <button onclick="deleteUserProfile('${c.uid}', '${c.fullName}')" class="px-3 py-2 rounded-xl bg-tt-red text-tt-cream border-2 border-tt-ink text-xs font-display font-bold">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.openCustomerExpediente = function(uid) {
+            const c = state.allCustomers.find(x => x.uid === uid);
+            if (!c) return;
+            document.getElementById('admin-customer-detail-modal').classList.remove('hidden');
+            document.getElementById('det-client-name').textContent = c.fullName;
+            document.getElementById('det-client-info').textContent = `Correo: ${c.email || '---'} • UID: ${c.uid} • QR: ${c.qrToken}`;
+
+            const custPurchases = state.allPurchases.filter(p => p.customerId === uid);
+            document.getElementById('det-client-purchases').innerHTML = custPurchases.length
+                ? custPurchases.map(p => `<div class="p-2 rounded-xl bg-tt-cream border border-tt-ink flex justify-between"><span>$${Number(p.subtotal).toFixed(2)} (Ciclo #${p.cycleNumber})</span><strong class="text-tt-red">+${p.stampsAwarded}</strong></div>`).join('')
+                : '<p class="text-tt-ink/60">Sin compras registradas.</p>';
+
+            const custCards = state.allCards.filter(card => card.customerId === uid);
+            document.getElementById('det-client-cycles').innerHTML = custCards.length
+                ? custCards.map(card => `<div class="p-2 rounded-xl bg-tt-cream border border-tt-ink flex justify-between"><span>Ciclo #${card.cycleNumber} (${card.stampsCount}/10)</span><strong>${card.rewardRedeemed ? 'Canjeado' : 'Activo'}</strong></div>`).join('')
+                : '<p class="text-tt-ink/60">Sin ciclos.</p>';
+        };
+
+        window.renderAdminReports = function() {
+            const dateFilter = document.getElementById('report-date-filter').value;
+            const list = state.allAuditLogs.filter(log => {
+                if (!dateFilter || !log.createdAt?.toDate) return true;
+                return log.createdAt.toDate().toISOString().split('T')[0] === dateFilter;
+            });
+
+            const container = document.getElementById('admin-audit-logs-list');
+            if (list.length === 0) {
+                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">No hay registros en esta fecha.</p>';
+                return;
+            }
+            container.innerHTML = list.map(l => {
+                const ts = l.createdAt?.toDate ? l.createdAt.toDate().toLocaleString('es-MX') : 'Reciente';
+                return `
+                    <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div>
+                            <span class="px-2 py-0.5 rounded bg-tt-ink text-tt-yellow font-display font-bold mr-2">${l.action}</span>
+                            <strong class="text-tt-ink">${l.customerName || ''}</strong>
+                            <p class="text-tt-ink/80 mt-1">${l.details}</p>
+                        </div>
+                        <span class="text-tt-ink/70 font-mono text-[11px] shrink-0">${ts}</span>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        // =========================================================================
+        // 8. NAVEGACIÓN, NOTIFICACIONES Y CICLO DE INICIO
+        // =========================================================================
+        window.navigateTo = function(view) {
+            ['view-landing', 'view-auth', 'view-admin-login', 'view-client', 'view-admin'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (view === 'landing') {
+                document.getElementById('view-landing').classList.remove('hidden');
+            } else if (view === 'auth-register' || view === 'auth-login') {
+                document.getElementById('view-auth').classList.remove('hidden');
+                switchAuthTab(view === 'auth-register' ? 'register' : 'login');
+            } else if (view === 'admin-login') {
+                if (state.isEmployee) {
+                    document.getElementById('view-admin').classList.remove('hidden');
+                } else {
+                    document.getElementById('view-admin-login').classList.remove('hidden');
+                }
+            } else if (view === 'client-dashboard') {
+                if (!state.currentUser) return navigateTo('auth-login');
+                document.getElementById('view-client').classList.remove('hidden');
+            } else if (view === 'admin-dashboard') {
+                if (!state.isEmployee) {
+                    showToast("Acceso exclusivo para administradores autorizados.", "error");
+                    return navigateTo('admin-login');
+                }
+                document.getElementById('view-admin').classList.remove('hidden');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.switchAuthTab = function(tab) {
+            const isReg = tab === 'register';
+            document.getElementById('tab-register').className = isReg
+                ? "py-3 rounded-2xl font-display font-extrabold text-sm transition bg-tt-red text-tt-cream"
+                : "py-3 rounded-2xl font-display font-extrabold text-sm transition text-tt-cream/70 hover:text-tt-cream";
+            document.getElementById('tab-login').className = !isReg
+                ? "py-3 rounded-2xl font-display font-extrabold text-sm transition bg-tt-yellow text-tt-ink"
+                : "py-3 rounded-2xl font-display font-extrabold text-sm transition text-tt-cream/70 hover:text-tt-cream";
+            document.getElementById('form-register').classList.toggle('hidden', !isReg);
+            document.getElementById('form-login').classList.toggle('hidden', isReg);
+        };
+
+        window.switchAdminSection = function(section) {
+            ['dashboard', 'customers', 'register-purchase', 'rewards', 'reports'].forEach(sec => {
+                document.getElementById(`admin-sec-${sec}`).classList.add('hidden');
+                const btn = document.getElementById(`admin-nav-${sec}`);
+                btn.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream";
+            });
+            document.getElementById(`admin-sec-${section}`).classList.remove('hidden');
+            document.getElementById(`admin-nav-${section}`).className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap bg-tt-red text-tt-cream border-2 border-tt-ink shadow-[3px_3px_0px_#132227]";
+        };
+
+        window.toggleResetModal = function(show) {
+            document.getElementById('reset-password-modal').classList.toggle('hidden', !show);
+        };
+
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-tt-yellow text-tt-ink' : type === 'error' ? 'bg-tt-red text-tt-cream' : 'bg-tt-cream text-tt-ink';
+            toast.className = `${bg} px-4 py-3 rounded-2xl border-3 border-tt-ink shadow-[5px_5px_0px_#132227] flex items-center gap-3 text-xs font-display font-bold pointer-events-auto transition-all duration-300`;
+            toast.innerHTML = `<i class="fa-solid fa-burger text-base shrink-0"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4200);
+        };
+
+        window.openConfirmModal = function(title, message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            modal.classList.remove('hidden');
+
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                okBtn.onclick = null;
+                cancelBtn.onclick = null;
+            };
+
+            cancelBtn.onclick = cleanup;
+            okBtn.onclick = async () => {
+                cleanup();
+                await onConfirm();
+            };
+        };
+
+        window.showLegalNotice = function() {
+            openConfirmModal(
+                "Términos y Aviso de Privacidad - TORTRUCK LEALTAD",
+                "Programa exclusivo de TORTRUCK. Registro gratuito con 0 sellos. Primera compra elegible (subtotal de productos ≥ $150 MXN) otorga 2 sellos; compras posteriores elegibles otorgan 1 sello. Envío y propinas no participan. Al completar 10 sellos se otorga una Hamburguesa Clásica Gratis.",
+                () => {}
+            );
+        };
+
+        window.addEventListener('hashchange', () => {
+            if (window.location.hash === '#admin') {
+                navigateTo('admin-login');
+            }
+        });
+
+        window.addEventListener('load', () => {
+            injectMascotIllustrations();
+            initFirebaseSystem();
+            if (window.location.hash === '#admin') {
+                navigateTo('admin-login');
+            }
+        });
+    </script>
+</body>
+</html>
