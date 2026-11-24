@@ -1176,6 +1176,9 @@
             deleteDoc,
             collection, 
             onSnapshot, 
+            query,
+            where,
+            getDocs,
             serverTimestamp,
             runTransaction
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -1191,10 +1194,13 @@
                 slot.appendChild(tpl.content.cloneNode(true));
             });
         }
+        injectMascotIllustrations();
 
         // =========================================================================
-        // 2. CONFIGURACIÓN OFICIAL DE FIREBASE (TORTRUCK-LEALTAD)
+        // 2. CONFIGURACIÓN DE FIREBASE SPARK (OFICIAL TORTRUCK LEALTAD)
         // =========================================================================
+        const APP_ID = "tortruck-lealtad-prod";
+
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyBpzewIB_8LCq0qiR5pf5Lted5HwKcp7Is",
             authDomain: "tortruck-lealtad.firebaseapp.com",
@@ -1204,60 +1210,67 @@
             appId: "1:934820446763:web:58d0388a291fd7b24da06e"
         };
 
-        const appId = 'tortruck-lealtad-prod';
-        const getPublicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
-        const getPublicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+        let app = null;
+        let auth = null;
+        let db = null;
 
-        let app = null, auth = null, db = null, isFirebaseReady = false;
-        let isAdminLoginFlow = false;
-
-        let state = {
+        const state = {
             currentUser: null,
             userProfile: null,
             activeCard: null,
-            isEmployee: false,
             employeeProfile: null,
-            selectedPosCustomer: null,
+            isAdmin: false,
             statsPeriod: 'all',
+            selectedPosCustomer: null,
+            selectedPosCard: null,
+            qrScannerInstance: null,
+            isScanningQr: false,
             allCustomers: [],
             allCards: [],
             allPurchases: [],
             allRewards: [],
-            allAuditLogs: [],
-            qrScannerInstance: null,
-            isScanningQr: false,
-            isSubmittingTx: false
+            allCycles: [],
+            allAuditLogs: []
         };
 
-        function initFirebaseSystem() {
+        const getPublicCol = (colName) => collection(db, 'artifacts', APP_ID, 'public', 'data', colName);
+        const getPublicDoc = (colName, docId) => doc(db, 'artifacts', APP_ID, 'public', 'data', colName, docId);
+
+        function initFirebase() {
             try {
                 app = initializeApp(FIREBASE_CONFIG);
                 auth = getAuth(app);
-                auth.languageCode = 'es';
                 db = getFirestore(app);
-                isFirebaseReady = true;
-                setupAuthListener();
-            } catch (error) {
-                console.error("Error inicializando Firebase:", error);
+                listenToAuthChanges();
+            } catch (err) {
+                console.error("Error inicializando Firebase:", err);
+                showToast("Error conectando con Firebase.", "error");
             }
         }
 
-        function mapFirebaseAuthError(code) {
-            const map = {
-                'auth/email-already-in-use': 'Este correo electrónico ya está registrado. Inicia sesión.',
-                'auth/invalid-email': 'El formato del correo electrónico no es válido.',
-                'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
-                'auth/user-not-found': 'No existe una cuenta registrada con este correo.',
-                'auth/wrong-password': 'La contraseña ingresada es incorrecta.',
-                'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-                'auth/too-many-requests': 'Demasiados intentos fallidos. Intenta de nuevo en unos minutos.'
+        // =========================================================================
+        // 3. UI & NAVEGACIÓN (INCLUYENDO RUTA INDEPENDIENTE #admin)
+        // =========================================================================
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgMap = {
+                success: 'bg-tt-yellow text-tt-ink',
+                error: 'bg-tt-red text-tt-cream',
+                info: 'bg-tt-cream text-tt-ink'
             };
-            return map[code] || 'No se pudo completar la autenticación. Verifica tus datos.';
-        }
+            toast.className = `pointer-events-auto flex items-center gap-3 p-4 rounded-2xl border-3 border-tt-ink shadow-[4px_4px_0px_#132227] ${bgMap[type] || bgMap.info} transition-all duration-300`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-burger text-lg shrink-0"></i>
+                <p class="text-xs font-display font-bold leading-snug">${message}</p>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4200);
+        };
 
-        // =========================================================================
-        // 3. REGISTRO, INICIO DE SESIÓN Y RECUPERACIÓN (CORREO Y CONTRASEÑA)
-        // =========================================================================
         window.togglePasswordVisibility = function(inputId, btn) {
             const input = document.getElementById(inputId);
             const icon = btn.querySelector('i');
@@ -1270,40 +1283,146 @@
             }
         };
 
+        window.toggleResetModal = function(show) {
+            const modal = document.getElementById('reset-password-modal');
+            if (show) {
+                const loginEmail = document.getElementById('login-email').value.trim();
+                if (loginEmail) document.getElementById('reset-email-input').value = loginEmail;
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        };
+
+        window.showConfirmDialog = function(title, message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirm-modal');
+                document.getElementById('confirm-title').textContent = title;
+                document.getElementById('confirm-message').textContent = message;
+                modal.classList.remove('hidden');
+
+                const cleanup = (result) => {
+                    modal.classList.add('hidden');
+                    document.getElementById('confirm-ok-btn').onclick = null;
+                    document.getElementById('confirm-cancel-btn').onclick = null;
+                    resolve(result);
+                };
+                document.getElementById('confirm-ok-btn').onclick = () => cleanup(true);
+                document.getElementById('confirm-cancel-btn').onclick = () => cleanup(false);
+            });
+        };
+
+        window.showLegalNotice = function() {
+            window.showConfirmDialog(
+                "Términos y Aviso de Privacidad - TORTRUCK LEALTAD",
+                "Tus datos (nombre y correo) se utilizan exclusivamente para gestionar tu tarjeta digital de fidelización de TORTRUCK. El registro otorga 0 sellos. Primera compra elegible >= $150 MXN otorga 2 sellos; compras posteriores >= $150 MXN otorgan 1 sello. No incluye envío ni propinas. Al completar 10 sellos obtienes 1 Hamburguesa Clásica Gratis."
+            );
+        };
+
+        window.navigateTo = function(viewName) {
+            ['view-landing', 'view-auth', 'view-admin-login', 'view-client', 'view-admin'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (viewName === 'landing') {
+                document.getElementById('view-landing').classList.remove('hidden');
+            } else if (viewName === 'auth-register') {
+                document.getElementById('view-auth').classList.remove('hidden');
+                switchAuthTab('register');
+            } else if (viewName === 'auth-login') {
+                document.getElementById('view-auth').classList.remove('hidden');
+                switchAuthTab('login');
+            } else if (viewName === 'admin-login') {
+                if (state.currentUser && state.isAdmin) {
+                    document.getElementById('view-admin').classList.remove('hidden');
+                } else {
+                    document.getElementById('view-admin-login').classList.remove('hidden');
+                }
+            } else if (viewName === 'client-dashboard') {
+                if (!state.currentUser) return navigateTo('auth-login');
+                document.getElementById('view-client').classList.remove('hidden');
+            } else if (viewName === 'admin-dashboard') {
+                if (!state.currentUser || !state.isAdmin) {
+                    showToast("Acceso denegado. Se requieren permisos administrativos verificados.", "error");
+                    return navigateTo('admin-login');
+                }
+                document.getElementById('view-admin').classList.remove('hidden');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.switchAuthTab = function(tab) {
+            const tabReg = document.getElementById('tab-register');
+            const tabLog = document.getElementById('tab-login');
+            const formReg = document.getElementById('form-register');
+            const formLog = document.getElementById('form-login');
+
+            if (tab === 'register') {
+                tabReg.className = "py-3 rounded-2xl font-display font-extrabold text-sm transition bg-tt-red text-tt-cream";
+                tabLog.className = "py-3 rounded-2xl font-display font-extrabold text-sm transition text-tt-cream/70 hover:text-tt-cream";
+                formReg.classList.remove('hidden');
+                formLog.classList.add('hidden');
+            } else {
+                tabLog.className = "py-3 rounded-2xl font-display font-extrabold text-sm transition bg-tt-yellow text-tt-ink";
+                tabReg.className = "py-3 rounded-2xl font-display font-extrabold text-sm transition text-tt-cream/70 hover:text-tt-cream";
+                formLog.classList.remove('hidden');
+                formReg.classList.add('hidden');
+            }
+        };
+
+        // =========================================================================
+        // 4. AUTENTICACIÓN CON CORREO Y CONTRASEÑA (100% COMPATIBLE SPARK)
+        // =========================================================================
+        function mapFirebaseAuthError(err) {
+            const code = err?.code || '';
+            if (code === 'auth/email-already-in-use') return 'Este correo ya está registrado. Inicia sesión en "Ya tengo mi cuenta".';
+            if (code === 'auth/invalid-email') return 'El formato del correo electrónico no es válido.';
+            if (code === 'auth/weak-password') return 'La contraseña debe tener al menos 6 caracteres.';
+            if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+                return 'Correo o contraseña incorrectos. Verifica tus datos.';
+            }
+            if (code === 'auth/too-many-requests') return 'Demasiados intentos fallidos. Espera unos minutos.';
+            if (code === 'auth/network-request-failed') return 'Sin conexión a internet o dominio no autorizado en Firebase.';
+            if (code === 'auth/unauthorized-domain') return 'Este dominio aún no está autorizado en Firebase Authentication.';
+            return err.message || 'Ocurrió un error al autenticar.';
+        }
+
+        function withTimeout(promise, ms = 15000) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Tiempo de espera agotado. Abre la página desde su enlace web (https://) y verifica tu conexión.")), ms)
+                )
+            ]);
+        }
+
         window.handleRegisterSubmit = async function(e) {
             e.preventDefault();
-            if (!isFirebaseReady) return;
+            if (!auth || !db) return showToast("Firebase no está conectado.", "error");
 
             const fullName = document.getElementById('reg-name').value.trim();
             const email = document.getElementById('reg-email').value.trim().toLowerCase();
             const password = document.getElementById('reg-password').value;
-            const confirmPassword = document.getElementById('reg-password-confirm').value;
+            const confirmPass = document.getElementById('reg-password-confirm').value;
 
-            if (fullName.length < 3) {
-                showToast("Ingresa tu nombre completo.", "error");
-                return;
-            }
-            if (password !== confirmPassword) {
-                showToast("Las contraseñas no coinciden.", "error");
-                return;
+            if (password !== confirmPass) {
+                return showToast("Las contraseñas no coinciden.", "error");
             }
 
             const btn = document.getElementById('btn-submit-register');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando cuenta...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Creando cuenta...';
 
             try {
-                isAdminLoginFlow = false;
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
+                const cred = await withTimeout(createUserWithEmailAndPassword(auth, email, password));
+                const user = cred.user;
                 const publicQrCode = `TT-${user.uid.slice(0, 8).toUpperCase()}`;
                 const firstCardId = `${user.uid}_cycle_1`;
 
                 await setDoc(getPublicDoc('customers', user.uid), {
                     uid: user.uid,
-                    fullName,
-                    email,
+                    fullName: fullName,
+                    email: email,
                     role: 'user',
                     accountStatus: 'active',
                     qrToken: publicQrCode,
@@ -1329,20 +1448,19 @@
                     createdAt: serverTimestamp()
                 });
 
-                await setDoc(getPublicDoc('cycles', firstCardId), {
-                    cycleId: firstCardId,
+                await setDoc(getPublicDoc('cycles', `${user.uid}_c1`), {
+                    cycleId: `${user.uid}_c1`,
                     customerId: user.uid,
                     cycleNumber: 1,
-                    status: 'active',
+                    cardId: firstCardId,
                     stampsEarned: 0,
+                    status: 'active',
                     startedAt: serverTimestamp()
                 });
 
-                e.target.reset();
-                showToast("¡Registro exitoso! Bienvenido a TORTRUCK LEALTAD.", "success");
-            } catch (error) {
-                console.error(error);
-                showToast(mapFirebaseAuthError(error.code), "error");
+                showToast("¡Cuenta creada con éxito! Tu tarjeta inicia con 0 sellos.", "success");
+            } catch (err) {
+                showToast(mapFirebaseAuthError(err), "error");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Crear Mi Cuenta';
@@ -1351,156 +1469,193 @@
 
         window.handleLoginSubmit = async function(e) {
             e.preventDefault();
-            if (!isFirebaseReady) return;
+            if (!auth) return showToast("Firebase no está conectado.", "error");
 
             const email = document.getElementById('login-email').value.trim().toLowerCase();
             const password = document.getElementById('login-password').value;
 
             const btn = document.getElementById('btn-submit-login');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando sesión...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Ingresando...';
 
             try {
-                isAdminLoginFlow = false;
-                await signInWithEmailAndPassword(auth, email, password);
-                e.target.reset();
-                showToast("¡Qué gusto verte de nuevo en TORTRUCK!", "success");
-            } catch (error) {
-                console.error(error);
-                showToast(mapFirebaseAuthError(error.code), "error");
+                await withTimeout(signInWithEmailAndPassword(auth, email, password));
+                showToast("¡Bienvenido de vuelta a TORTRUCK!", "success");
+            } catch (err) {
+                showToast(mapFirebaseAuthError(err), "error");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-right-to-bracket text-tt-red"></i> Iniciar Sesión';
             }
         };
 
-        window.handleAdminLoginSubmit = async function(e) {
-            e.preventDefault();
-            if (!isFirebaseReady) return;
-
-            const email = document.getElementById('admin-login-email').value.trim().toLowerCase();
-            const password = document.getElementById('admin-login-password').value;
-
-            const btn = document.getElementById('btn-submit-admin-login');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando permisos...';
-
-            try {
-                isAdminLoginFlow = true;
-                const cred = await signInWithEmailAndPassword(auth, email, password);
-                const empSnap = await getDoc(getPublicDoc('employees', cred.user.uid));
-
-                if (!empSnap.exists() || empSnap.data().active !== true) {
-                    await signOut(auth);
-                    isAdminLoginFlow = false;
-                    showToast("Acceso denegado: Esta cuenta no tiene privilegios administrativos.", "error");
-                    return;
-                }
-
-                e.target.reset();
-                showToast("Acceso administrativo verificado.", "success");
-            } catch (error) {
-                console.error(error);
-                isAdminLoginFlow = false;
-                showToast(mapFirebaseAuthError(error.code), "error");
-            } finally {
-                btn.disabled = false;
-                btn.textContent = "Entrar al Panel Administrativo";
-            }
-        };
-
         window.handlePasswordResetSubmit = async function(e) {
             e.preventDefault();
-            if (!isFirebaseReady) return;
+            if (!auth) return showToast("Firebase no está conectado.", "error");
 
             const email = document.getElementById('reset-email-input').value.trim().toLowerCase();
             const btn = document.getElementById('btn-send-reset');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando correo...';
+            btn.textContent = "Enviando correo...";
 
             try {
                 await sendPasswordResetEmail(auth, email);
                 toggleResetModal(false);
-                e.target.reset();
-                showToast("Enlace enviado. Revisa tu bandeja de entrada o spam.", "success");
-            } catch (error) {
-                console.error(error);
-                showToast(mapFirebaseAuthError(error.code), "error");
+                showToast("Enlace de recuperación enviado. Revisa tu bandeja de entrada o spam.", "success");
+            } catch (err) {
+                showToast(mapFirebaseAuthError(err), "error");
             } finally {
                 btn.disabled = false;
                 btn.textContent = "Enviar Enlace de Recuperación";
             }
         };
 
+        window.handleAdminLoginSubmit = async function(e) {
+            e.preventDefault();
+            if (!auth || !db) return showToast("Firebase no está conectado.", "error");
+
+            const email = document.getElementById('admin-login-email').value.trim().toLowerCase();
+            const password = document.getElementById('admin-login-password').value;
+
+            const btn = document.getElementById('btn-submit-admin-login');
+            btn.disabled = true;
+            btn.textContent = "Verificando credenciales...";
+
+            try {
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                const empSnap = await getDoc(getPublicDoc('employees', cred.user.uid));
+
+                if (!empSnap.exists() || empSnap.data().active !== true) {
+                    await signOut(auth);
+                    showToast("Acceso denegado. Esta cuenta no tiene privilegios de administrador.", "error");
+                    return;
+                }
+
+                showToast(`Acceso administrativo concedido: ${empSnap.data().name}`, "success");
+                navigateTo('admin-dashboard');
+            } catch (err) {
+                showToast(mapFirebaseAuthError(err), "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Entrar al Panel Administrativo";
+            }
+        };
+
         window.logoutUser = async function() {
             if (!auth) return;
             await signOut(auth);
-            state.isEmployee = false;
-            state.employeeProfile = null;
-            state.userProfile = null;
             showToast("Sesión cerrada correctamente.", "info");
-            navigateTo('landing');
         };
 
         // =========================================================================
-        // 4. SINCRONIZACIÓN EN TIEMPO REAL Y PROTECCIÓN DE RUTAS
+        // 5. SINCRONIZACIÓN DE SESIÓN Y VERIFICACIÓN DE ROL EN FIRESTORE
         // =========================================================================
-        function setupAuthListener() {
+        function listenToAuthChanges() {
             onAuthStateChanged(auth, async (user) => {
-                state.currentUser = user;
                 if (!user) {
+                    state.currentUser = null;
+                    state.userProfile = null;
+                    state.activeCard = null;
+                    state.employeeProfile = null;
+                    state.isAdmin = false;
+
                     document.getElementById('nav-guest').classList.remove('hidden');
                     document.getElementById('nav-client').classList.add('hidden');
+                    document.getElementById('btn-switch-admin').classList.add('hidden');
+
                     if (window.location.hash === '#admin') {
                         navigateTo('admin-login');
+                    } else {
+                        navigateTo('landing');
                     }
                     return;
                 }
 
+                state.currentUser = user;
                 document.getElementById('nav-guest').classList.add('hidden');
                 document.getElementById('nav-client').classList.remove('hidden');
 
-                let isEmp = false;
                 try {
                     const empSnap = await getDoc(getPublicDoc('employees', user.uid));
                     if (empSnap.exists() && empSnap.data().active === true) {
-                        isEmp = true;
-                        state.isEmployee = true;
                         state.employeeProfile = empSnap.data();
+                        state.isAdmin = true;
                         document.getElementById('btn-switch-admin').classList.remove('hidden');
-                        document.getElementById('admin-role-badge').textContent = `Admin: ${empSnap.data().name || user.email}`;
-                        subscribeAdminCollections();
+                        document.getElementById('admin-role-badge').textContent = empSnap.data().name || 'Administrador TORTRUCK';
+                        initAdminRealtimeStreams();
                     } else {
-                        state.isEmployee = false;
+                        state.isAdmin = false;
                         document.getElementById('btn-switch-admin').classList.add('hidden');
                     }
-                } catch (e) {
-                    state.isEmployee = false;
-                    document.getElementById('btn-switch-admin').classList.add('hidden');
+                } catch (err) {
+                    state.isAdmin = false;
                 }
 
-                const openAdmin = isEmp && (isAdminLoginFlow || window.location.hash === '#admin');
-                subscribeClientProfileAndCard(user, openAdmin);
+                const wantsAdmin = window.location.hash === '#admin';
+                subscribeClientProfileAndCard(user, wantsAdmin && state.isAdmin);
             });
         }
 
         function subscribeClientProfileAndCard(user, openAdminDirectly = false) {
             let activeCardUnsub = null;
+            let isRepairingProfile = false;
 
-            onSnapshot(getPublicDoc('customers', user.uid), (docSnap) => {
+            onSnapshot(getPublicDoc('customers', user.uid), async (docSnap) => {
                 if (!docSnap.exists()) {
+                    // Auto-reparar perfil y tarjeta inicial si la cuenta existía en Auth sin documento en Firestore
+                    if (!isRepairingProfile) {
+                        isRepairingProfile = true;
+                        try {
+                            const fallbackName = user.displayName || (user.email ? user.email.split('@')[0] : 'Cliente TorTruck');
+                            const publicQrCode = `TT-${user.uid.slice(0, 8).toUpperCase()}`;
+                            const firstCardId = `${user.uid}_cycle_1`;
+
+                            await setDoc(getPublicDoc('customers', user.uid), {
+                                uid: user.uid,
+                                fullName: fallbackName,
+                                email: (user.email || '').toLowerCase(),
+                                role: 'user',
+                                accountStatus: 'active',
+                                qrToken: publicQrCode,
+                                currentCycleNumber: 1,
+                                activeCardId: firstCardId,
+                                totalRewardsRedeemed: 0,
+                                acceptedTermsAt: serverTimestamp(),
+                                createdAt: serverTimestamp()
+                            });
+
+                            await setDoc(getPublicDoc('cards', firstCardId), {
+                                cardId: firstCardId,
+                                customerId: user.uid,
+                                customerName: fallbackName,
+                                customerEmail: (user.email || '').toLowerCase(),
+                                cycleNumber: 1,
+                                stampsCount: 0,
+                                maxStamps: 10,
+                                purchasesInCycle: 0,
+                                status: 'active',
+                                rewardUnlocked: false,
+                                rewardRedeemed: false,
+                                createdAt: serverTimestamp()
+                            });
+                        } catch (repairErr) {
+                            console.error("Error auto-creando perfil:", repairErr);
+                        }
+                    }
                     if (openAdminDirectly) navigateTo('admin-dashboard');
                     return;
                 }
+
                 const profile = docSnap.data();
                 state.userProfile = profile;
+                const safeQrToken = profile.qrToken || `TT-${user.uid.slice(0, 8).toUpperCase()}`;
 
-                document.getElementById('client-display-name').textContent = profile.fullName;
-                document.getElementById('card-holder-name').textContent = profile.fullName;
-                document.getElementById('client-display-email').textContent = profile.email || user.email;
+                document.getElementById('client-display-name').textContent = profile.fullName || 'Cliente';
+                document.getElementById('card-holder-name').textContent = profile.fullName || 'Cliente';
+                document.getElementById('client-display-email').textContent = profile.email || user.email || '';
                 document.getElementById('client-cycle-number').textContent = profile.currentCycleNumber || 1;
                 document.getElementById('card-cycle-num').textContent = profile.currentCycleNumber || 1;
-                document.getElementById('client-public-code').textContent = profile.qrToken;
+                document.getElementById('client-public-code').textContent = safeQrToken;
 
                 const disabledBanner = document.getElementById('account-disabled-banner');
                 if (profile.accountStatus === 'disabled') {
@@ -1509,120 +1664,134 @@
                     disabledBanner.classList.add('hidden');
                 }
 
-                renderClientQRCode(profile.qrToken);
+                renderClientQRCode(safeQrToken);
 
                 if (profile.activeCardId) {
                     if (activeCardUnsub) activeCardUnsub();
-                    activeCardUnsub = onSnapshot(getPublicDoc('cards', profile.activeCardId), (cardSnap) => {
-                        if (!cardSnap.exists()) return;
+                    activeCardUnsub = onSnapshot(getPublicDoc('cards', profile.activeCardId), async (cardSnap) => {
+                        if (!cardSnap.exists()) {
+                            await setDoc(getPublicDoc('cards', profile.activeCardId), {
+                                cardId: profile.activeCardId,
+                                customerId: user.uid,
+                                customerName: profile.fullName || 'Cliente',
+                                customerEmail: profile.email || '',
+                                cycleNumber: profile.currentCycleNumber || 1,
+                                stampsCount: 0,
+                                maxStamps: 10,
+                                purchasesInCycle: 0,
+                                status: 'active',
+                                rewardUnlocked: false,
+                                rewardRedeemed: false,
+                                createdAt: serverTimestamp()
+                            });
+                            return;
+                        }
                         state.activeCard = cardSnap.data();
                         renderClientDigitalCard(state.activeCard);
                     });
                 }
+
+                if (openAdminDirectly) {
+                    navigateTo('admin-dashboard');
+                } else if (!document.getElementById('view-admin').classList.contains('hidden')) {
+                    // Mantener en vista administrativa
+                } else {
+                    navigateTo('client-dashboard');
+                }
             });
 
-            onSnapshot(getPublicCol('purchases'), (snap) => {
-                const list = snap.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .filter(item => item.customerId === user.uid)
-                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                renderClientPurchasesHistory(list);
+            onSnapshot(query(getPublicCol('purchases'), where('customerId', '==', user.uid)), (snap) => {
+                const purchases = [];
+                snap.forEach(d => purchases.push({ id: d.id, ...d.data() }));
+                purchases.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderClientPurchases(purchases);
             });
 
-            onSnapshot(getPublicCol('rewards'), (snap) => {
-                const list = snap.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .filter(item => item.customerId === user.uid)
-                    .sort((a, b) => (b.redeemedAt?.seconds || 0) - (a.redeemedAt?.seconds || 0));
-                renderClientRewardsHistory(list);
+            onSnapshot(query(getPublicCol('rewards'), where('customerId', '==', user.uid)), (snap) => {
+                const rewards = [];
+                snap.forEach(d => rewards.push({ id: d.id, ...d.data() }));
+                rewards.sort((a, b) => (b.redeemedAt?.seconds || 0) - (a.redeemedAt?.seconds || 0));
+                renderClientRewards(rewards);
             });
 
-            onSnapshot(getPublicCol('cards'), (snap) => {
-                const list = snap.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .filter(item => item.customerId === user.uid)
-                    .sort((a, b) => (b.cycleNumber || 1) - (a.cycleNumber || 1));
-                renderClientCyclesHistory(list);
+            onSnapshot(query(getPublicCol('cards'), where('customerId', '==', user.uid)), (snap) => {
+                const cards = [];
+                snap.forEach(d => cards.push({ id: d.id, ...d.data() }));
+                cards.sort((a, b) => (b.cycleNumber || 1) - (a.cycleNumber || 1));
+                renderClientCycles(cards);
             });
-
-            if (openAdminDirectly) {
-                navigateTo('admin-dashboard');
-            } else {
-                navigateTo('client-dashboard');
-            }
         }
 
         function renderClientDigitalCard(card) {
-            const stamps = Math.min(10, Math.max(0, card.stampsCount || 0));
-            const remaining = 10 - stamps;
-            const pct = (stamps / 10) * 100;
+            const count = Math.min(10, Math.max(0, card.stampsCount || 0));
+            const remaining = 10 - count;
+            const pct = (count / 10) * 100;
 
-            document.getElementById('client-stamps-badge').textContent = `${stamps} / 10 Sellos`;
+            document.getElementById('client-stamps-badge').textContent = `${count} / 10 Sellos`;
+            document.getElementById('client-stamps-remaining').textContent = remaining === 0 ? '¡Tarjeta completa!' : `Faltan ${remaining} sellos`;
             document.getElementById('client-progress-bar').style.width = `${pct}%`;
 
             const banner = document.getElementById('reward-unlocked-banner');
             const statusPill = document.getElementById('card-reward-status');
 
-            if (stamps >= 10 && !card.rewardRedeemed) {
-                document.getElementById('client-stamps-remaining').textContent = "¡TARJETA COMPLETA!";
+            if (count >= 10 && !card.rewardRedeemed) {
                 banner.classList.remove('hidden');
-                statusPill.textContent = "¡HAMBURGUESA GRATIS DISPONIBLE!";
-                statusPill.className = "inline-block mt-0.5 px-3 py-1 rounded-lg bg-tt-red text-tt-cream font-display font-extrabold text-xs";
+                statusPill.textContent = '¡HAMBURGUESA CLÁSICA GRATIS LISTA!';
+                statusPill.className = 'inline-block mt-0.5 px-3 py-1 rounded-lg bg-tt-red text-tt-cream font-display font-extrabold text-xs';
             } else {
-                document.getElementById('client-stamps-remaining').textContent = `Faltan ${remaining} sello${remaining === 1 ? '' : 's'}`;
                 banner.classList.add('hidden');
                 statusPill.textContent = `Faltan ${remaining} sellos para tu premio`;
-                statusPill.className = "inline-block mt-0.5 px-3 py-1 rounded-lg bg-tt-ink text-tt-cream font-display font-bold text-xs";
+                statusPill.className = 'inline-block mt-0.5 px-3 py-1 rounded-lg bg-tt-ink text-tt-cream font-display font-bold text-xs';
             }
 
             const grid = document.getElementById('stamps-grid');
             grid.innerHTML = '';
-
             for (let i = 1; i <= 10; i++) {
-                const earned = i <= stamps;
-                const isGoal = i === 10;
-                const cell = document.createElement('div');
-
+                const earned = i <= count;
+                const isLast = i === 10;
+                const slot = document.createElement('div');
                 if (earned) {
-                    cell.className = "aspect-square rounded-2xl stamp-earned flex flex-col items-center justify-center animate-stamp-pop";
-                    cell.innerHTML = `
-                        <i class="fa-solid ${isGoal ? 'fa-crown text-tt-yellow' : 'fa-burger text-tt-red'} text-xl sm:text-2xl"></i>
-                        <span class="text-[10px] font-display font-extrabold text-tt-ink mt-1">#${i}</span>
-                    `;
-                } else if (isGoal) {
-                    cell.className = "aspect-square rounded-2xl bg-tt-red/15 border-2 border-dashed border-tt-red flex flex-col items-center justify-center";
-                    cell.innerHTML = `
-                        <i class="fa-solid fa-gift text-tt-red text-lg"></i>
-                        <span class="text-[9px] font-display font-extrabold text-tt-red mt-0.5">GRATIS</span>
+                    slot.className = `aspect-square rounded-2xl stamp-earned flex flex-col items-center justify-center animate-stamp-pop ${isLast ? 'bg-tt-red text-tt-cream' : 'text-tt-ink'}`;
+                    slot.innerHTML = `
+                        <i class="fa-solid ${isLast ? 'fa-gift text-tt-yellow' : 'fa-burger text-tt-red'} text-xl sm:text-2xl"></i>
+                        <span class="text-[10px] font-display font-extrabold mt-0.5">#${i}</span>
                     `;
                 } else {
-                    cell.className = "aspect-square rounded-2xl stamp-empty flex items-center justify-center font-display font-bold text-sm text-tt-ink/60";
-                    cell.textContent = i;
+                    slot.className = `aspect-square rounded-2xl stamp-empty flex flex-col items-center justify-center text-tt-ink/50 ${isLast ? 'border-tt-red text-tt-red' : ''}`;
+                    slot.innerHTML = isLast
+                        ? `<i class="fa-solid fa-gift text-base"></i><span class="text-[8px] font-display font-extrabold uppercase mt-0.5">Gratis</span>`
+                        : `<span class="font-display font-extrabold text-sm">${i}</span>`;
                 }
-                grid.appendChild(cell);
+                grid.appendChild(slot);
             }
         }
 
-        let lastRenderedQr = "";
-        function renderClientQRCode(qrToken) {
-            if (!qrToken || qrToken === lastRenderedQr) return;
-            const container = document.getElementById('client-qrcode');
-            container.innerHTML = '';
-            new QRCode(container, {
-                text: qrToken,
+        let lastRenderedQrText = '';
+        function renderClientQRCode(qrText) {
+            if (!qrText) return;
+            const qrContainer = document.getElementById('client-qrcode');
+            if (!qrContainer) return;
+            if (lastRenderedQrText === qrText && qrContainer.children.length > 0) return;
+            lastRenderedQrText = qrText;
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: qrText,
                 width: 170,
                 height: 170,
                 colorDark: "#132227",
                 colorLight: "#FBF5E6",
                 correctLevel: QRCode.CorrectLevel.H
             });
-            lastRenderedQr = qrToken;
         }
 
         window.downloadClientQrImage = function() {
-            const canvas = document.querySelector('#client-qrcode canvas');
-            const img = document.querySelector('#client-qrcode img');
-            const dataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+            const qrContainer = document.getElementById('client-qrcode');
+            const canvas = qrContainer ? qrContainer.querySelector('canvas') : null;
+            const img = qrContainer ? qrContainer.querySelector('img') : null;
+            let dataUrl = '';
+            if (canvas) dataUrl = canvas.toDataURL('image/png');
+            else if (img && img.src) dataUrl = img.src;
+
             if (!dataUrl) {
                 showToast("Generando código QR, intenta en un segundo.", "info");
                 return;
@@ -1636,150 +1805,123 @@
             showToast("Código QR guardado en tu dispositivo.", "success");
         };
 
-        function renderClientPurchasesHistory(purchases) {
+        function formatDate(ts) {
+            if (!ts) return 'Reciente';
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderClientPurchases(purchases) {
             document.getElementById('client-purchases-count').textContent = purchases.length;
             const container = document.getElementById('client-purchases-list');
             if (purchases.length === 0) {
                 container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">Aún no tienes compras registradas.</p>';
                 return;
             }
-            container.innerHTML = purchases.map(p => {
-                const dateStr = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Reciente';
-                const badgeClass = p.stampsAwarded > 0
-                    ? 'bg-tt-yellow border-2 border-tt-ink text-tt-red'
-                    : 'bg-tt-cream border-2 border-tt-ink/40 text-tt-ink/60';
-                return `
-                    <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-3">
-                        <div>
-                            <p class="font-display font-extrabold text-sm text-tt-ink">Subtotal: $${Number(p.subtotal).toFixed(2)} MXN</p>
-                            <p class="text-[11px] font-semibold text-tt-ink/70">${dateStr} • Ciclo #${p.cycleNumber}</p>
-                        </div>
-                        <span class="px-3 py-1 rounded-xl text-xs font-display font-extrabold ${badgeClass}">
-                            +${p.stampsAwarded} Sello${p.stampsAwarded === 1 ? '' : 's'}
-                        </span>
+            container.innerHTML = purchases.map(p => `
+                <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-2">
+                    <div>
+                        <p class="font-display font-extrabold text-sm text-tt-ink">Subtotal: $${Number(p.subtotal).toFixed(2)} MXN</p>
+                        <p class="text-[11px] text-tt-ink/70">${formatDate(p.createdAt)} • Ciclo #${p.cycleNumber}</p>
                     </div>
-                `;
-            }).join('');
+                    <span class="px-3 py-1 rounded-xl font-display font-extrabold text-xs border-2 border-tt-ink ${p.stampsAwarded > 0 ? 'bg-tt-yellow text-tt-ink' : 'bg-white text-tt-ink/60'}">
+                        +${p.stampsAwarded} ${p.stampsAwarded === 1 ? 'sello' : 'sellos'}
+                    </span>
+                </div>
+            `).join('');
         }
 
-        function renderClientRewardsHistory(rewards) {
+        function renderClientRewards(rewards) {
             document.getElementById('client-rewards-count').textContent = rewards.length;
             const container = document.getElementById('client-rewards-list');
             if (rewards.length === 0) {
                 container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">Completa 10 sellos para disfrutar tu primera Hamburguesa Clásica Gratis.</p>';
                 return;
             }
-            container.innerHTML = rewards.map(r => {
-                const dateStr = r.redeemedAt?.toDate ? r.redeemedAt.toDate().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Validado';
-                return `
-                    <div class="p-3.5 rounded-2xl halftone-yellow border-2 border-tt-ink flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-tt-red text-tt-cream border-2 border-tt-ink flex items-center justify-center shrink-0">
-                                <i class="fa-solid fa-burger"></i>
-                            </div>
-                            <div>
-                                <p class="font-display font-extrabold text-sm text-tt-ink">Hamburguesa Clásica Gratis</p>
-                                <p class="text-[11px] font-semibold text-tt-ink/80">Canjeada el ${dateStr} • Ciclo #${r.cycleNumber}</p>
-                            </div>
-                        </div>
-                        <span class="px-2.5 py-1 rounded-lg bg-tt-cream border-2 border-tt-ink text-xs font-display font-extrabold text-tt-ink">Canjeada</span>
+            container.innerHTML = rewards.map(r => `
+                <div class="p-3.5 rounded-2xl halftone-yellow border-2 border-tt-ink flex items-center justify-between gap-2">
+                    <div>
+                        <p class="font-display font-extrabold text-sm text-tt-ink"><i class="fa-solid fa-burger text-tt-red mr-1.5"></i>${r.rewardName}</p>
+                        <p class="text-[11px] text-tt-ink/80">Canjeada: ${formatDate(r.redeemedAt)}</p>
                     </div>
-                `;
-            }).join('');
+                    <span class="px-2.5 py-1 rounded-lg bg-tt-ink text-tt-yellow text-[10px] font-display font-bold uppercase">
+                        Ciclo #${r.cycleNumber}
+                    </span>
+                </div>
+            `).join('');
         }
 
-        function renderClientCyclesHistory(cards) {
+        function renderClientCycles(cards) {
             document.getElementById('client-cycles-count').textContent = cards.length;
             const container = document.getElementById('client-cycles-list');
-            if (cards.length === 0) {
-                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">Ciclo #1 activo.</p>';
-                return;
-            }
-            container.innerHTML = cards.map(c => {
-                const isCompleted = c.rewardRedeemed;
-                const badge = isCompleted
-                    ? '<span class="px-2.5 py-0.5 rounded-md bg-tt-ink text-tt-cream text-[11px] font-display font-bold">Completado y Canjeado</span>'
-                    : `<span class="px-2.5 py-0.5 rounded-md bg-tt-yellow border border-tt-ink text-tt-ink text-[11px] font-display font-extrabold">Activo (${c.stampsCount}/10)</span>`;
-                return `
-                    <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-2">
-                        <div>
-                            <p class="font-display font-extrabold text-sm text-tt-ink">Ciclo #${c.cycleNumber}</p>
-                            <p class="text-[11px] font-semibold text-tt-ink/70">${c.purchasesInCycle || 0} compra(s) registrada(s)</p>
-                        </div>
-                        ${badge}
+            if (cards.length === 0) return;
+            container.innerHTML = cards.map(c => `
+                <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-2">
+                    <div>
+                        <p class="font-display font-extrabold text-sm text-tt-ink">Ciclo #${c.cycleNumber}</p>
+                        <p class="text-[11px] text-tt-ink/70">${c.stampsCount || 0} / 10 sellos acumulados</p>
                     </div>
-                `;
-            }).join('');
+                    <span class="px-2.5 py-1 rounded-lg border border-tt-ink text-[10px] font-display font-extrabold uppercase ${c.rewardRedeemed ? 'bg-tt-teal text-tt-cream' : 'bg-tt-yellow text-tt-ink'}">
+                        ${c.rewardRedeemed ? 'Canjeado' : 'Activo'}
+                    </span>
+                </div>
+            `).join('');
         }
 
         // =========================================================================
-        // 5. MOTOR DE REGLAS OFICIALES DE FIDELIZACIÓN
+        // 6. PANEL ADMINISTRATIVO (GESTIÓN DE USUARIOS, CAJA, CANJES Y AUDITORÍA)
         // =========================================================================
-        function calculateOfficialStamps(subtotalProducts, activeCard) {
-            const subtotal = Number(subtotalProducts);
-            if (isNaN(subtotal) || subtotal < 150) {
-                return {
-                    eligible: false,
-                    stampsToAward: 0,
-                    reason: "Subtotal inferior al mínimo de $150.00 MXN (No genera sellos)."
-                };
-            }
+        let adminStreamsInitialized = false;
+        function initAdminRealtimeStreams() {
+            if (adminStreamsInitialized) return;
+            adminStreamsInitialized = true;
 
-            if (activeCard.stampsCount >= 10 && !activeCard.rewardRedeemed) {
-                return {
-                    eligible: false,
-                    stampsToAward: 0,
-                    reason: "Tarjeta completa (10/10). Debe validarse el canje antes de acumular en nuevo ciclo."
-                };
-            }
-
-            const isFirstEligibleOfCycle = (activeCard.stampsCount === 0);
-            const rawAward = isFirstEligibleOfCycle ? 2 : 1;
-            const spaceLeft = 10 - activeCard.stampsCount;
-            const finalAward = Math.min(rawAward, spaceLeft);
-
-            return {
-                eligible: true,
-                stampsToAward: finalAward,
-                reason: isFirstEligibleOfCycle
-                    ? "Primera compra elegible (≥ $150 MXN) del ciclo: +2 sellos."
-                    : "Compra elegible posterior (≥ $150 MXN): +1 sello."
-            };
-        }
-
-        // =========================================================================
-        // 6. PANEL ADMINISTRATIVO (ESTADÍSTICAS, USUARIOS, COMPRAS Y CANJES)
-        // =========================================================================
-        function subscribeAdminCollections() {
             onSnapshot(getPublicCol('customers'), (snap) => {
-                state.allCustomers = snap.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                state.allCustomers = [];
+                snap.forEach(d => state.allCustomers.push({ id: d.id, ...d.data() }));
                 renderAdminDashboardStats();
+                renderAdminCustomersList();
                 renderRecentRegistrations();
-                renderAdminCustomersTable();
             });
+
             onSnapshot(getPublicCol('cards'), (snap) => {
-                state.allCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.allCards = [];
+                snap.forEach(d => state.allCards.push({ id: d.id, ...d.data() }));
                 renderAdminDashboardStats();
+                renderAdminCustomersList();
                 renderAdminPendingRewards();
-                renderAdminCustomersTable();
             });
+
             onSnapshot(getPublicCol('purchases'), (snap) => {
-                state.allPurchases = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.allPurchases = [];
+                snap.forEach(d => state.allPurchases.push({ id: d.id, ...d.data() }));
                 renderAdminDashboardStats();
             });
+
             onSnapshot(getPublicCol('rewards'), (snap) => {
-                state.allRewards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.allRewards = [];
+                snap.forEach(d => state.allRewards.push({ id: d.id, ...d.data() }));
                 renderAdminDashboardStats();
             });
+
             onSnapshot(getPublicCol('audit_logs'), (snap) => {
-                state.allAuditLogs = snap.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                state.allAuditLogs = [];
+                snap.forEach(d => state.allAuditLogs.push({ id: d.id, ...d.data() }));
+                state.allAuditLogs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderAdminReports();
             });
         }
+
+        window.switchAdminSection = function(section) {
+            ['dashboard', 'customers', 'register-purchase', 'rewards', 'reports'].forEach(sec => {
+                document.getElementById(`admin-sec-${sec}`).classList.add('hidden');
+                const btn = document.getElementById(`admin-nav-${sec}`);
+                btn.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream";
+            });
+            document.getElementById(`admin-sec-${section}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`admin-nav-${section}`);
+            activeBtn.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap bg-tt-red text-tt-cream border-2 border-tt-ink shadow-[3px_3px_0px_#132227]";
+        };
 
         window.setStatsPeriod = function(period) {
             state.statsPeriod = period;
@@ -1790,29 +1932,32 @@
             renderAdminDashboardStats();
         };
 
-        function isWithinPeriod(timestamp, period) {
-            if (period === 'all' || !timestamp?.toDate) return true;
-            const date = timestamp.toDate();
+        function isWithinPeriod(ts, period) {
+            if (period === 'all') return true;
+            if (!ts) return false;
+            const date = ts.toDate ? ts.toDate() : new Date(ts);
             const now = new Date();
-            const diffDays = (now - date) / (1000 * 60 * 60 * 24);
-            if (period === 'day') return date.toDateString() === now.toDateString();
-            if (period === 'week') return diffDays <= 7;
-            if (period === 'month') return diffDays <= 30;
+            const diffMs = now - date;
+            const dayMs = 86400000;
+            if (period === 'day') return diffMs <= dayMs;
+            if (period === 'week') return diffMs <= dayMs * 7;
+            if (period === 'month') return diffMs <= dayMs * 30;
             return true;
         }
 
         function renderAdminDashboardStats() {
             const p = state.statsPeriod;
-            const filteredUsers = state.allCustomers.filter(item => isWithinPeriod(item.createdAt, p));
-            const filteredPurchases = state.allPurchases.filter(item => isWithinPeriod(item.createdAt, p));
-            const filteredRewards = state.allRewards.filter(item => isWithinPeriod(item.redeemedAt, p));
-            const stampsGiven = filteredPurchases.reduce((acc, cur) => acc + (cur.stampsAwarded || 0), 0);
-            const pendingCards = state.allCards.filter(c => c.stampsCount >= 10 && !c.rewardRedeemed);
-            const completedCards = state.allCards.filter(c => c.stampsCount >= 10);
+            const filteredCustomers = state.allCustomers.filter(c => isWithinPeriod(c.createdAt, p));
+            const filteredPurchases = state.allPurchases.filter(x => isWithinPeriod(x.createdAt, p));
+            const filteredRewards = state.allRewards.filter(x => isWithinPeriod(x.redeemedAt, p));
 
-            document.getElementById('stat-total-clients').textContent = filteredUsers.length;
+            const totalStamps = filteredPurchases.reduce((acc, item) => acc + (item.stampsAwarded || 0), 0);
+            const pendingCards = state.allCards.filter(c => (c.stampsCount || 0) >= 10 && !c.rewardRedeemed);
+            const completedCards = state.allCards.filter(c => (c.stampsCount || 0) >= 10);
+
+            document.getElementById('stat-total-clients').textContent = filteredCustomers.length;
             document.getElementById('stat-total-purchases').textContent = filteredPurchases.length;
-            document.getElementById('stat-total-stamps').textContent = stampsGiven;
+            document.getElementById('stat-total-stamps').textContent = totalStamps;
             document.getElementById('stat-completed-cards').textContent = completedCards.length;
             document.getElementById('stat-pending-rewards').textContent = pendingCards.length;
             document.getElementById('stat-redeemed-rewards').textContent = filteredRewards.length;
@@ -1828,25 +1973,180 @@
 
         function renderRecentRegistrations() {
             const container = document.getElementById('recent-registrations-list');
-            const recent = state.allCustomers.slice(0, 6);
-            if (recent.length === 0) {
+            const sorted = [...state.allCustomers].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 6);
+            if (sorted.length === 0) {
                 container.innerHTML = '<p class="text-xs text-tt-ink/60">Sin usuarios registrados aún.</p>';
                 return;
             }
-            container.innerHTML = recent.map(u => {
-                const dateStr = u.createdAt?.toDate ? u.createdAt.toDate().toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Reciente';
+            container.innerHTML = sorted.map(c => `
+                <div class="p-3 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-3 text-xs">
+                    <div>
+                        <strong class="font-display font-extrabold text-tt-ink block">${c.fullName}</strong>
+                        <span class="text-tt-ink/70">${c.email || ''} • ${formatDate(c.createdAt)}</span>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-lg border border-tt-ink font-display font-bold ${c.accountStatus === 'disabled' ? 'bg-tt-red text-tt-cream' : 'bg-tt-yellow text-tt-ink'}">
+                        ${c.accountStatus === 'disabled' ? 'Suspendida' : 'Activa'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // --- GESTIÓN DE USUARIOS (BUSCAR, SUSPENDER/ACTIVAR, ELIMINAR) ---
+        let customerSearchTerm = '';
+        window.filterAdminCustomers = function(val) {
+            customerSearchTerm = val.toLowerCase().trim();
+            renderAdminCustomersList();
+        };
+
+        function renderAdminCustomersList() {
+            const tbody = document.getElementById('admin-customers-table-body');
+            const mobileContainer = document.getElementById('admin-customers-mobile-cards');
+
+            const filtered = state.allCustomers.filter(c => 
+                (c.fullName || '').toLowerCase().includes(customerSearchTerm) ||
+                (c.email || '').toLowerCase().includes(customerSearchTerm)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-tt-ink/60">No se encontraron usuarios.</td></tr>';
+                mobileContainer.innerHTML = '<p class="text-center text-tt-ink/60 py-4 text-sm">No se encontraron usuarios.</p>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(c => {
+                const card = state.allCards.find(x => x.cardId === c.activeCardId) || { stampsCount: 0 };
+                const isDisabled = c.accountStatus === 'disabled';
                 return `
-                    <div class="p-3 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-3 text-xs">
-                        <div>
-                            <strong class="font-display text-sm text-tt-ink block">${u.fullName}</strong>
-                            <span class="text-tt-ink/75">${u.email || '---'}</span>
+                    <tr class="hover:bg-tt-cream/60">
+                        <td class="py-3.5 px-3">
+                            <span class="font-display font-extrabold text-tt-ink block">${c.fullName}</span>
+                            <span class="text-xs text-tt-ink/70">${c.email || ''}</span>
+                        </td>
+                        <td class="py-3.5 px-3 text-xs text-tt-ink/75">${formatDate(c.createdAt)}</td>
+                        <td class="py-3.5 px-3">
+                            <span class="px-2.5 py-1 rounded-lg bg-tt-yellow border border-tt-ink font-display font-extrabold text-xs">${card.stampsCount || 0} / 10</span>
+                        </td>
+                        <td class="py-3.5 px-3">
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-display font-extrabold uppercase ${isDisabled ? 'bg-tt-red text-tt-cream' : 'bg-tt-teal text-tt-cream'}">
+                                ${isDisabled ? 'Suspendida' : 'Activa'}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-3 text-right space-x-1.5">
+                            <button onclick="inspectCustomerDetail('${c.uid}')" class="px-2.5 py-1.5 rounded-lg bg-white border border-tt-ink text-xs font-display font-bold hover:bg-tt-yellow" title="Ver Perfil">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}')" class="px-2.5 py-1.5 rounded-lg bg-white border border-tt-ink text-xs font-display font-bold hover:bg-tt-yellow" title="${isDisabled ? 'Reactivar' : 'Suspender'}">
+                                <i class="fa-solid ${isDisabled ? 'fa-user-check text-tt-tealDark' : 'fa-user-slash text-tt-red'}"></i>
+                            </button>
+                            <button onclick="deleteUserAccountRecord('${c.uid}', '${c.fullName}')" class="px-2.5 py-1.5 rounded-lg bg-tt-red text-tt-cream border border-tt-ink text-xs font-display font-bold" title="Eliminar Perfil">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            mobileContainer.innerHTML = filtered.map(c => {
+                const card = state.allCards.find(x => x.cardId === c.activeCardId) || { stampsCount: 0 };
+                const isDisabled = c.accountStatus === 'disabled';
+                return `
+                    <div class="p-4 rounded-2xl bg-tt-cream border-2 border-tt-ink space-y-2.5">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-display font-extrabold text-base text-tt-ink">${c.fullName}</p>
+                                <p class="text-xs text-tt-ink/75">${c.email || ''}</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-lg bg-tt-yellow border border-tt-ink font-display font-extrabold text-xs">${card.stampsCount || 0}/10</span>
                         </div>
-                        <span class="px-2.5 py-1 rounded-lg bg-white border border-tt-ink font-mono text-[11px]">${dateStr}</span>
+                        <div class="flex flex-wrap gap-2 pt-2 border-t border-tt-ink/15">
+                            <button onclick="inspectCustomerDetail('${c.uid}')" class="flex-1 py-2 rounded-xl bg-white border border-tt-ink text-xs font-display font-bold">Perfil</button>
+                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}')" class="flex-1 py-2 rounded-xl bg-white border border-tt-ink text-xs font-display font-bold">
+                                ${isDisabled ? 'Reactivar' : 'Suspender'}
+                            </button>
+                            <button onclick="deleteUserAccountRecord('${c.uid}', '${c.fullName}')" class="px-3 py-2 rounded-xl bg-tt-red text-tt-cream border border-tt-ink text-xs font-display font-bold">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
 
+        window.toggleUserAccountStatus = async function(uid, currentStatus) {
+            if (!state.isAdmin) return showToast("Sin permisos administrativos.", "error");
+            if (uid === state.currentUser.uid) return showToast("No puedes suspender tu propia cuenta administrativa.", "error");
+
+            const nextStatus = currentStatus === 'disabled' ? 'active' : 'disabled';
+            const confirmed = await showConfirmDialog(
+                nextStatus === 'disabled' ? "Suspender Cuenta" : "Reactivar Cuenta",
+                `¿Confirmas cambiar el estado de esta cuenta a ${nextStatus === 'disabled' ? 'SUSPENDIDA' : 'ACTIVA'}?`
+            );
+            if (!confirmed) return;
+
+            try {
+                await updateDoc(getPublicDoc('customers', uid), { accountStatus: nextStatus });
+                await setDoc(getPublicDoc('audit_logs', `STATUS_${Date.now()}`), {
+                    action: 'ACCOUNT_STATUS_CHANGED',
+                    targetUid: uid,
+                    newStatus: nextStatus,
+                    byUid: state.currentUser.uid,
+                    createdAt: serverTimestamp()
+                });
+                showToast(`Cuenta actualizada a ${nextStatus === 'disabled' ? 'Suspendida' : 'Activa'}.`, "success");
+            } catch (err) {
+                showToast(err.message || "Error actualizando cuenta.", "error");
+            }
+        };
+
+        window.deleteUserAccountRecord = async function(uid, fullName) {
+            if (!state.isAdmin) return showToast("Sin permisos administrativos.", "error");
+            if (uid === state.currentUser.uid) return showToast("No puedes eliminar tu propia cuenta administrativa.", "error");
+
+            const confirmed = await showConfirmDialog(
+                "Eliminar Registro de Usuario",
+                `¿Estás seguro de eliminar el perfil de ${fullName}? Esta acción eliminará su perfil y tarjeta activa en Firestore.`
+            );
+            if (!confirmed) return;
+
+            try {
+                const cust = state.allCustomers.find(c => c.uid === uid);
+                if (cust?.activeCardId) {
+                    await deleteDoc(getPublicDoc('cards', cust.activeCardId));
+                }
+                await deleteDoc(getPublicDoc('customers', uid));
+                await setDoc(getPublicDoc('audit_logs', `DEL_${Date.now()}`), {
+                    action: 'USER_DELETED',
+                    targetUid: uid,
+                    targetName: fullName,
+                    byUid: state.currentUser.uid,
+                    createdAt: serverTimestamp()
+                });
+                showToast(`Registro de ${fullName} eliminado.`, "success");
+            } catch (err) {
+                showToast(err.message || "Error eliminando usuario.", "error");
+            }
+        };
+
+        window.inspectCustomerDetail = function(uid) {
+            const cust = state.allCustomers.find(c => c.uid === uid);
+            if (!cust) return;
+            document.getElementById('det-client-name').textContent = cust.fullName;
+            document.getElementById('det-client-info').textContent = `Correo: ${cust.email || ''} • ID QR: ${cust.qrToken} • Ciclo #${cust.currentCycleNumber}`;
+
+            const custPurchases = state.allPurchases.filter(p => p.customerId === uid);
+            document.getElementById('det-client-purchases').innerHTML = custPurchases.length
+                ? custPurchases.map(p => `<div class="p-2 bg-tt-cream rounded-lg border border-tt-ink/20 flex justify-between"><span>$${p.subtotal} MXN (${formatDate(p.createdAt)})</span><strong class="text-tt-red">+${p.stampsAwarded}</strong></div>`).join('')
+                : '<p class="text-tt-ink/60">Sin compras.</p>';
+
+            const custCards = state.allCards.filter(c => c.customerId === uid);
+            document.getElementById('det-client-cycles').innerHTML = custCards.length
+                ? custCards.map(c => `<div class="p-2 bg-tt-cream rounded-lg border border-tt-ink/20 flex justify-between"><span>Ciclo #${c.cycleNumber} (${c.stampsCount}/10 sellos)</span><strong>${c.rewardRedeemed ? 'Canjeada' : 'Activa'}</strong></div>`).join('')
+                : '<p class="text-tt-ink/60">Sin ciclos.</p>';
+
+            document.getElementById('admin-customer-detail-modal').classList.remove('hidden');
+        };
+
+        // --- REGISTRO DE COMPRAS EN CAJA (REGLAS OFICIALES TORTRUCK) ---
         window.toggleQrScanner = async function() {
             const btn = document.getElementById('btn-toggle-scanner');
             if (state.isScanningQr && state.qrScannerInstance) {
@@ -1860,15 +2160,28 @@
                 state.qrScannerInstance = new Html5Qrcode("qr-reader");
                 await state.qrScannerInstance.start(
                     { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 210, height: 210 } },
-                    (decodedText) => {
-                        const found = state.allCustomers.find(c => c.qrToken === decodedText.trim() || c.uid === decodedText.trim());
+                    { fps: 12, qrbox: { width: 220, height: 220 } },
+                    async (decodedText) => {
+                        const cleanToken = decodedText.trim().toUpperCase();
+                        let found = state.allCustomers.find(c =>
+                            (c.qrToken || '').toUpperCase() === cleanToken ||
+                            (c.uid || '').toUpperCase() === cleanToken
+                        );
+
+                        if (!found) {
+                            const snap = await getDocs(query(getPublicCol('customers'), where('qrToken', '==', cleanToken)));
+                            if (!snap.empty) {
+                                found = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                                state.allCustomers.push(found);
+                            }
+                        }
+
                         if (found) {
                             selectCustomerForPos(found.uid);
                             showToast(`QR verificado: ${found.fullName}`, "success");
                             window.toggleQrScanner();
                         } else {
-                            showToast("Código QR no reconocido.", "error");
+                            showToast(`QR (${cleanToken}) no encontrado en la base de datos.`, "error");
                         }
                     }
                 );
@@ -1879,255 +2192,291 @@
             }
         };
 
-        window.searchClientForPurchase = function(query) {
+        let searchDebounceTimer = null;
+        window.searchClientForPurchase = function(queryText) {
             const container = document.getElementById('admin-search-results');
-            const q = query.trim().toLowerCase();
+            const q = queryText.trim().toLowerCase();
             if (!q) { container.innerHTML = ''; return; }
 
-            const matches = state.allCustomers.filter(c => 
+            const renderMatches = (matches) => {
+                if (matches.length === 0) {
+                    container.innerHTML = '<p class="text-xs text-tt-ink/60 py-1">Sin coincidencias.</p>';
+                    return;
+                }
+                container.innerHTML = matches.map(c => `
+                    <button type="button" onclick="selectCustomerForPos('${c.uid}')" 
+                            class="w-full text-left p-2.5 rounded-xl bg-white border-2 border-tt-ink hover:bg-tt-yellow transition flex justify-between items-center text-xs">
+                        <div>
+                            <strong class="block text-tt-ink font-display">${c.fullName}</strong>
+                            <span class="text-tt-ink/70">${c.email || ''}</span>
+                        </div>
+                        <span class="font-mono font-bold text-tt-red">${c.qrToken || '---'}</span>
+                    </button>
+                `).join('');
+            };
+
+            const localMatches = state.allCustomers.filter(c => 
                 (c.fullName || '').toLowerCase().includes(q) ||
                 (c.email || '').toLowerCase().includes(q) ||
-                (c.qrToken || '').toLowerCase().includes(q)
-            ).slice(0, 5);
+                (c.qrToken || '').toLowerCase().includes(q) ||
+                (c.uid || '').toLowerCase().includes(q)
+            ).slice(0, 6);
 
-            if (matches.length === 0) {
-                container.innerHTML = '<p class="text-xs text-tt-ink/60 py-1">Sin coincidencias.</p>';
-                return;
+            renderMatches(localMatches);
+
+            // Si no está en caché y parece un código TT-..., buscar directo en Firestore
+            if (localMatches.length === 0 && q.startsWith('tt-')) {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(async () => {
+                    try {
+                        const upperCode = queryText.trim().toUpperCase();
+                        const snap = await getDocs(query(getPublicCol('customers'), where('qrToken', '==', upperCode)));
+                        if (!snap.empty) {
+                            const found = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                            if (!state.allCustomers.some(x => x.uid === found.uid)) {
+                                state.allCustomers.push(found);
+                            }
+                            renderMatches([found]);
+                        }
+                    } catch (err) {
+                        console.error("Error buscando token directo:", err);
+                    }
+                }, 300);
             }
-
-            container.innerHTML = matches.map(c => `
-                <button type="button" onclick="selectCustomerForPos('${c.uid}')" 
-                        class="w-full text-left p-2.5 rounded-xl bg-white border-2 border-tt-ink hover:bg-tt-yellow transition flex justify-between items-center text-xs">
-                    <div>
-                        <strong class="block text-tt-ink font-display">${c.fullName}</strong>
-                        <span class="text-tt-ink/70">${c.email || ''}</span>
-                    </div>
-                    <span class="font-mono font-bold text-tt-red">${c.qrToken}</span>
-                </button>
-            `).join('');
         };
 
         window.selectCustomerForPos = function(uid) {
-            const customer = state.allCustomers.find(c => c.uid === uid);
-            if (!customer) return;
-            if (customer.accountStatus === 'disabled') {
-                showToast("Este usuario está deshabilitado.", "error");
-                return;
+            const cust = state.allCustomers.find(c => c.uid === uid);
+            if (!cust) return;
+            if (cust.accountStatus === 'disabled') {
+                return showToast("Esta cuenta se encuentra suspendida.", "error");
             }
-            const activeCard = state.allCards.find(card => card.cardId === customer.activeCardId) || {
-                cardId: `${uid}_cycle_${customer.currentCycleNumber || 1}`,
-                cycleNumber: customer.currentCycleNumber || 1,
+            const card = state.allCards.find(c => c.cardId === cust.activeCardId) || {
+                cardId: cust.activeCardId,
+                cycleNumber: cust.currentCycleNumber || 1,
                 stampsCount: 0,
                 rewardRedeemed: false
             };
 
-            state.selectedPosCustomer = { customer, card: activeCard };
-            document.getElementById('selected-client-purchase-box').classList.remove('hidden');
+            state.selectedPosCustomer = cust;
+            state.selectedPosCard = card;
+
+            document.getElementById('pos-client-name').textContent = cust.fullName;
+            document.getElementById('pos-client-email').textContent = cust.email || '';
+            document.getElementById('pos-client-cycle').textContent = card.cycleNumber || 1;
+            document.getElementById('pos-client-stamps').textContent = `${card.stampsCount || 0} / 10`;
+
+            document.getElementById('pos-subtotal').value = '';
+            document.getElementById('pos-extras').value = '';
+            document.getElementById('pos-ticket-ref').value = '';
             document.getElementById('last-purchase-receipt').classList.add('hidden');
-            document.getElementById('pos-client-name').textContent = customer.fullName;
-            document.getElementById('pos-client-email').textContent = customer.email || '---';
-            document.getElementById('pos-client-cycle').textContent = activeCard.cycleNumber;
-            document.getElementById('pos-client-stamps').textContent = `${activeCard.stampsCount} / 10`;
+            document.getElementById('selected-client-purchase-box').classList.remove('hidden');
             previewStampCalculation();
         };
 
+        function calculateOfficialStamps(subtotalProducts, currentCard) {
+            if (!currentCard || currentCard.stampsCount >= 10) {
+                return { eligible: false, stampsToAdd: 0, reason: "Tarjeta completa (10/10). Debe canjear su premio primero." };
+            }
+            if (isNaN(subtotalProducts) || subtotalProducts < 150) {
+                return { eligible: false, stampsToAdd: 0, reason: "Subtotal de productos menor a $150 MXN. Otorga 0 sellos." };
+            }
+            const rawStamps = currentCard.stampsCount === 0 ? 2 : 1;
+            const cappedStamps = Math.min(rawStamps, 10 - currentCard.stampsCount);
+            return {
+                eligible: true,
+                stampsToAdd: cappedStamps,
+                reason: currentCard.stampsCount === 0
+                    ? "Primera compra elegible del ciclo (≥ $150 MXN) → +2 sellos."
+                    : "Compra posterior elegible (≥ $150 MXN) → +1 sello."
+            };
+        }
+
         window.previewStampCalculation = function() {
-            if (!state.selectedPosCustomer) return;
-            const subtotal = parseFloat(document.getElementById('pos-subtotal').value || 0);
-            const extras = parseFloat(document.getElementById('pos-extras').value || 0);
-            const result = calculateOfficialStamps(subtotal, state.selectedPosCustomer.card);
-            const extraNote = extras > 0 ? ` (Se ignoran $${extras.toFixed(2)} de envío/propina)` : '';
-            document.getElementById('pos-rule-explanation').textContent = result.reason + extraNote;
-            const badgeEl = document.getElementById('pos-rule-stamps-badge');
-            badgeEl.textContent = `+${result.stampsToAward} Sello${result.stampsToAward === 1 ? '' : 's'}`;
-            badgeEl.className = result.stampsToAward > 0
-                ? "px-4 py-2 rounded-xl font-display font-extrabold text-sm bg-tt-yellow border-2 border-tt-ink text-tt-red shrink-0"
-                : "px-4 py-2 rounded-xl font-display font-extrabold text-sm bg-white border-2 border-tt-ink text-tt-ink shrink-0";
+            const subtotal = parseFloat(document.getElementById('pos-subtotal').value);
+            const calc = calculateOfficialStamps(subtotal, state.selectedPosCard);
+            document.getElementById('pos-rule-explanation').textContent = calc.reason;
+            const badge = document.getElementById('pos-rule-stamps-badge');
+            badge.textContent = `+${calc.stampsToAdd} ${calc.stampsToAdd === 1 ? 'Sello' : 'Sellos'}`;
+            badge.className = calc.stampsToAdd > 0
+                ? 'px-4 py-2 rounded-xl font-display font-extrabold text-sm bg-tt-yellow border-2 border-tt-ink text-tt-ink shrink-0'
+                : 'px-4 py-2 rounded-xl font-display font-extrabold text-sm bg-white border-2 border-tt-ink text-tt-ink shrink-0';
         };
 
         window.submitPurchaseRegistration = async function(e) {
             e.preventDefault();
-            if (!state.isEmployee || !state.selectedPosCustomer || state.isSubmittingTx) return;
+            if (!state.isAdmin || !state.selectedPosCustomer) return;
 
             const subtotal = parseFloat(document.getElementById('pos-subtotal').value);
-            const extras = parseFloat(document.getElementById('pos-extras').value || 0);
+            const extras = parseFloat(document.getElementById('pos-extras').value) || 0;
             const ticketRef = document.getElementById('pos-ticket-ref').value.trim();
-            if (isNaN(subtotal) || subtotal <= 0) return;
 
-            state.isSubmittingTx = true;
+            if (isNaN(subtotal) || subtotal <= 0) return showToast("Ingresa un subtotal válido.", "error");
+
             const btn = document.getElementById('btn-submit-purchase');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            btn.textContent = "Procesando...";
+
+            const cust = state.selectedPosCustomer;
+            const purchaseId = `PUR_${cust.uid}_${Date.now()}`;
 
             try {
-                const { customer, card } = state.selectedPosCustomer;
-                const timeBucket = Math.floor(Date.now() / 15000);
-                const idempotencyKey = ticketRef 
-                    ? `TK_${ticketRef.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}`
-                    : `PUR_${customer.uid}_${card.cycleNumber}_${Math.round(subtotal)}_${timeBucket}`;
+                const txResult = await runTransaction(db, async (tx) => {
+                    const custRef = getPublicDoc('customers', cust.uid);
+                    const custSnap = await tx.get(custRef);
+                    if (!custSnap.exists()) throw new Error("Usuario no encontrado.");
 
-                let txResultData = null;
+                    const freshCust = custSnap.data();
+                    const cardRef = getPublicDoc('cards', freshCust.activeCardId);
+                    const cardSnap = await tx.get(cardRef);
+                    if (!cardSnap.exists()) throw new Error("Tarjeta activa no encontrada.");
 
-                await runTransaction(db, async (transaction) => {
-                    const purchaseDocRef = getPublicDoc('purchases', idempotencyKey);
-                    const cardDocRef = getPublicDoc('cards', card.cardId);
-
-                    const existingPurchase = await transaction.get(purchaseDocRef);
-                    if (existingPurchase.exists()) {
-                        throw new Error("Esta compra o folio ya fue registrada previamente. No se duplicarán sellos.");
+                    const freshCard = cardSnap.data();
+                    if (freshCard.stampsCount >= 10 && !freshCard.rewardRedeemed) {
+                        throw new Error("El usuario ya tiene 10 sellos. Valida primero su recompensa.");
                     }
-
-                    const freshCardSnap = await transaction.get(cardDocRef);
-                    if (!freshCardSnap.exists()) throw new Error("Tarjeta no encontrada.");
-                    const freshCard = freshCardSnap.data();
 
                     const calc = calculateOfficialStamps(subtotal, freshCard);
-                    if (freshCard.stampsCount >= 10 && !freshCard.rewardRedeemed) {
-                        throw new Error("El cliente ya tiene 10 sellos. Debe canjear su Hamburguesa Clásica antes.");
-                    }
+                    const newTotalStamps = freshCard.stampsCount + calc.stampsToAdd;
+                    const rewardUnlocked = newTotalStamps >= 10;
 
-                    const newStampsTotal = freshCard.stampsCount + calc.stampsToAward;
-                    const rewardNowUnlocked = newStampsTotal >= 10;
-
-                    transaction.set(purchaseDocRef, {
-                        purchaseId: idempotencyKey,
-                        customerId: customer.uid,
-                        customerName: customer.fullName,
+                    tx.set(getPublicDoc('purchases', purchaseId), {
+                        purchaseId,
+                        customerId: freshCust.uid,
+                        customerName: freshCust.fullName,
                         cardId: freshCard.cardId,
                         cycleNumber: freshCard.cycleNumber,
                         subtotal,
-                        excludedExtras: isNaN(extras) ? 0 : extras,
+                        extrasExcluded: extras,
                         eligible: calc.eligible,
-                        stampsAwarded: calc.stampsToAward,
+                        stampsAwarded: calc.stampsToAdd,
                         ticketRef: ticketRef || null,
                         registeredByUid: state.currentUser.uid,
                         createdAt: serverTimestamp()
                     });
 
-                    transaction.update(cardDocRef, {
-                        stampsCount: newStampsTotal,
+                    tx.update(cardRef, {
+                        stampsCount: newTotalStamps,
                         purchasesInCycle: (freshCard.purchasesInCycle || 0) + 1,
-                        rewardUnlocked: rewardNowUnlocked,
-                        status: rewardNowUnlocked ? 'reward_available' : 'active',
+                        rewardUnlocked,
+                        status: rewardUnlocked ? 'reward_available' : 'active',
                         updatedAt: serverTimestamp()
                     });
 
-                    const auditRef = doc(getPublicCol('audit_logs'));
-                    transaction.set(auditRef, {
-                        action: 'COMPRA_REGISTRADA',
-                        customerId: customer.uid,
-                        customerName: customer.fullName,
-                        details: `Subtotal $${subtotal.toFixed(2)} MXN → +${calc.stampsToAward} sellos (Total: ${newStampsTotal}/10)`,
-                        employeeUid: state.currentUser.uid,
+                    tx.set(getPublicDoc('audit_logs', `LOG_${purchaseId}`), {
+                        action: 'PURCHASE_REGISTERED',
+                        customerId: freshCust.uid,
+                        customerName: freshCust.fullName,
+                        subtotal,
+                        stampsAwarded: calc.stampsToAdd,
+                        newTotalStamps,
+                        byUid: state.currentUser.uid,
                         createdAt: serverTimestamp()
                     });
 
-                    txResultData = { subtotal, eligible: calc.eligible, stampsAwarded: calc.stampsToAward, newStampsTotal };
+                    return { subtotal, eligible: calc.eligible, stampsAwarded: calc.stampsToAdd, newTotalStamps, rewardUnlocked };
                 });
 
+                document.getElementById('rec-subtotal').textContent = `$${txResult.subtotal.toFixed(2)} MXN`;
+                document.getElementById('rec-eligible').textContent = txResult.eligible ? 'Sí (≥ $150)' : 'No (< $150)';
+                document.getElementById('rec-stamps').textContent = `+${txResult.stampsAwarded}`;
+                document.getElementById('rec-total').textContent = `${txResult.newTotalStamps} / 10`;
                 document.getElementById('last-purchase-receipt').classList.remove('hidden');
-                document.getElementById('rec-subtotal').textContent = `$${txResultData.subtotal.toFixed(2)} MXN`;
-                document.getElementById('rec-eligible').textContent = txResultData.eligible ? 'Sí (≥ $150)' : 'No (< $150)';
-                document.getElementById('rec-stamps').textContent = `+${txResultData.stampsAwarded}`;
-                document.getElementById('rec-total').textContent = `${txResultData.newStampsTotal} / 10`;
 
-                state.selectedPosCustomer.card.stampsCount = txResultData.newStampsTotal;
-                document.getElementById('pos-client-stamps').textContent = `${txResultData.newStampsTotal} / 10`;
+                state.selectedPosCard.stampsCount = txResult.newTotalStamps;
+                document.getElementById('pos-client-stamps').textContent = `${txResult.newTotalStamps} / 10`;
                 document.getElementById('pos-subtotal').value = '';
                 document.getElementById('pos-extras').value = '';
-                document.getElementById('pos-ticket-ref').value = '';
                 previewStampCalculation();
-                showToast(`¡Compra registrada! +${txResultData.stampsAwarded} sellos otorgados.`, "success");
-            } catch (error) {
-                console.error(error);
-                showToast(error.message || "Error al registrar compra.", "error");
+
+                showToast(
+                    txResult.rewardUnlocked
+                        ? `¡${cust.fullName} llegó a 10 sellos y desbloqueó su Hamburguesa Clásica Gratis!`
+                        : `Compra registrada: +${txResult.stampsAwarded} sello(s).`,
+                    "success"
+                );
+            } catch (err) {
+                showToast(err.message || "Error registrando compra.", "error");
             } finally {
-                state.isSubmittingTx = false;
                 btn.disabled = false;
                 btn.textContent = "Confirmar y Registrar Compra";
             }
         };
 
+        // --- VALIDAR CANJES DE HAMBURGUESA CLÁSICA ---
         function renderAdminPendingRewards() {
-            const pending = state.allCards.filter(c => c.stampsCount >= 10 && !c.rewardRedeemed);
             const container = document.getElementById('admin-pending-rewards-list');
+            const pending = state.allCards.filter(c => (c.stampsCount || 0) >= 10 && !c.rewardRedeemed);
 
             if (pending.length === 0) {
-                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">No hay recompensas pendientes de canje.</p>';
+                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">No hay recompensas pendientes de canje en este momento.</p>';
                 return;
             }
 
             container.innerHTML = pending.map(card => `
-                <div class="p-5 rounded-3xl halftone-yellow border-3 border-tt-ink flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="p-5 rounded-2xl halftone-yellow border-3 border-tt-ink shadow-[4px_4px_0px_#132227] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <span class="px-2.5 py-0.5 rounded-md bg-tt-red text-tt-cream border border-tt-ink text-xs font-display font-extrabold">10 / 10 SELLOS</span>
-                        <h4 class="font-display font-extrabold text-xl text-tt-ink mt-1">${card.customerName}</h4>
-                        <p class="text-xs font-bold text-tt-ink/80">${card.customerEmail || '---'} • Ciclo #${card.cycleNumber}</p>
+                        <span class="px-2.5 py-0.5 rounded bg-tt-red text-tt-cream text-[10px] font-display font-extrabold uppercase">10/10 Sellos • Ciclo #${card.cycleNumber}</span>
+                        <h3 class="font-display font-extrabold text-xl text-tt-ink mt-1">${card.customerName}</h3>
+                        <p class="text-xs font-semibold text-tt-ink/80">${card.customerEmail || ''} • Premio: Hamburguesa Clásica Gratis</p>
                     </div>
-                    <button onclick="confirmRedeemReward('${card.customerId}', '${card.cardId}', '${card.customerName}')" 
-                            class="px-5 py-3 rounded-2xl bg-tt-red text-tt-cream font-display font-extrabold text-sm comic-btn">
+                    <button onclick="validateAndRedeemReward('${card.customerId}', '${card.cardId}', '${card.customerName}')" 
+                            class="px-5 py-3 rounded-xl font-display font-extrabold text-sm bg-tt-red text-tt-cream comic-btn shrink-0">
                         <i class="fa-solid fa-check-double mr-1.5"></i>Validar Entrega
                     </button>
                 </div>
             `).join('');
         }
 
-        window.confirmRedeemReward = function(customerId, cardId, customerName) {
-            openConfirmModal(
-                "Validar Hamburguesa Clásica Gratis",
-                `¿Confirmas la entrega de la Hamburguesa Clásica Gratis para ${customerName}? Se cerrará el ciclo actual y se abrirá un nuevo ciclo con 0 sellos.`,
-                async () => {
-                    await executeRewardRedemption(customerId, cardId);
-                }
+        window.validateAndRedeemReward = async function(customerId, cardId, customerName) {
+            if (!state.isAdmin) return showToast("Sin permisos administrativos.", "error");
+
+            const confirmed = await showConfirmDialog(
+                "Confirmar Canje de Hamburguesa Clásica",
+                `¿Confirmas la entrega de 1 HAMBURGUESA CLÁSICA GRATIS a ${customerName}? Se cerrará este ciclo y se creará una tarjeta nueva en 0 sellos.`
             );
-        };
+            if (!confirmed) return;
 
-        async function executeRewardRedemption(customerId, cardId) {
-            if (!state.isEmployee) return;
             try {
-                await runTransaction(db, async (transaction) => {
-                    const customerRef = getPublicDoc('customers', customerId);
-                    const currentCardRef = getPublicDoc('cards', cardId);
-
-                    const custSnap = await transaction.get(customerRef);
-                    const cardSnap = await transaction.get(currentCardRef);
+                await runTransaction(db, async (tx) => {
+                    const custRef = getPublicDoc('customers', customerId);
+                    const cardRef = getPublicDoc('cards', cardId);
+                    const [custSnap, cardSnap] = await Promise.all([tx.get(custRef), tx.get(cardRef)]);
 
                     if (!custSnap.exists() || !cardSnap.exists()) throw new Error("Registro no encontrado.");
-                    const customer = custSnap.data();
+                    const cust = custSnap.data();
                     const card = cardSnap.data();
 
                     if (card.rewardRedeemed || card.stampsCount < 10) {
-                        throw new Error("Esta recompensa ya fue canjeada o no cumple los 10 sellos.");
+                        throw new Error("Esta tarjeta ya fue canjeada o no tiene 10 sellos.");
                     }
 
-                    const nextCycleNum = (customer.currentCycleNumber || 1) + 1;
-                    const nextCardId = `${customerId}_cycle_${nextCycleNum}`;
-                    const rewardDocId = `REW_${cardId}`;
+                    const nextCycleNumber = (cust.currentCycleNumber || 1) + 1;
+                    const nextCardId = `${customerId}_cycle_${nextCycleNumber}`;
 
-                    transaction.update(currentCardRef, {
+                    tx.update(cardRef, {
                         rewardRedeemed: true,
                         status: 'completed',
                         redeemedAt: serverTimestamp(),
                         redeemedByUid: state.currentUser.uid
                     });
 
-                    transaction.set(getPublicDoc('rewards', rewardDocId), {
-                        rewardId: rewardDocId,
+                    tx.set(getPublicDoc('rewards', `REW_${cardId}`), {
+                        rewardId: `REW_${cardId}`,
                         customerId,
-                        customerName: customer.fullName,
-                        cardId,
+                        customerName: cust.fullName,
                         cycleNumber: card.cycleNumber,
-                        rewardName: "Hamburguesa Clásica Gratis",
+                        rewardName: 'Hamburguesa Clásica Gratis',
                         validatedByUid: state.currentUser.uid,
                         redeemedAt: serverTimestamp()
                     });
 
-                    transaction.set(getPublicDoc('cards', nextCardId), {
+                    tx.set(getPublicDoc('cards', nextCardId), {
                         cardId: nextCardId,
                         customerId,
-                        customerName: customer.fullName,
-                        customerEmail: customer.email || '',
-                        cycleNumber: nextCycleNum,
+                        customerName: cust.fullName,
+                        customerEmail: cust.email || '',
+                        cycleNumber: nextCycleNumber,
                         stampsCount: 0,
                         maxStamps: 10,
                         purchasesInCycle: 0,
@@ -2137,324 +2486,75 @@
                         createdAt: serverTimestamp()
                     });
 
-                    transaction.update(customerRef, {
-                        currentCycleNumber: nextCycleNum,
+                    tx.update(custRef, {
+                        currentCycleNumber: nextCycleNumber,
                         activeCardId: nextCardId,
-                        totalRewardsRedeemed: (customer.totalRewardsRedeemed || 0) + 1
+                        totalRewardsRedeemed: (cust.totalRewardsRedeemed || 0) + 1
                     });
 
-                    const auditRef = doc(getPublicCol('audit_logs'));
-                    transaction.set(auditRef, {
-                        action: 'RECOMPENSA_CANJEADA',
+                    tx.set(getPublicDoc('audit_logs', `LOG_REW_${cardId}`), {
+                        action: 'REWARD_REDEEMED',
                         customerId,
-                        customerName: customer.fullName,
-                        details: `Canje Hamburguesa Clásica Gratis (Ciclo #${card.cycleNumber}). Nuevo Ciclo #${nextCycleNum} iniciado en 0 sellos.`,
-                        employeeUid: state.currentUser.uid,
+                        customerName: cust.fullName,
+                        completedCycle: card.cycleNumber,
+                        nextCycle: nextCycleNumber,
+                        byUid: state.currentUser.uid,
                         createdAt: serverTimestamp()
                     });
                 });
 
-                showToast("Canje validado. Nuevo ciclo creado en 0 sellos.", "success");
-            } catch (error) {
-                console.error(error);
-                showToast(error.message || "No se pudo validar el canje.", "error");
+                showToast(`¡Canje validado! ${customerName} inició su nuevo ciclo en 0 sellos.`, "success");
+            } catch (err) {
+                showToast(err.message || "Error validando canje.", "error");
             }
-        }
-
-        // =========================================================================
-        // 7. GESTIÓN DE USUARIOS (DESHABILITAR / ELIMINAR PERFIL CON CONFIRMACIÓN)
-        // =========================================================================
-        window.toggleUserAccountStatus = function(uid, currentStatus, fullName) {
-            if (!state.isEmployee) return;
-            const willDisable = currentStatus !== 'disabled';
-            openConfirmModal(
-                willDisable ? "Deshabilitar Cuenta de Usuario" : "Reactivar Cuenta de Usuario",
-                willDisable
-                    ? `¿Deseas deshabilitar la cuenta de ${fullName}? No podrá acumular sellos mientras esté suspendida.`
-                    : `¿Deseas reactivar la cuenta de ${fullName}?`,
-                async () => {
-                    try {
-                        const newStatus = willDisable ? 'disabled' : 'active';
-                        await updateDoc(getPublicDoc('customers', uid), {
-                            accountStatus: newStatus,
-                            updatedAt: serverTimestamp()
-                        });
-                        await setDoc(doc(getPublicCol('audit_logs')), {
-                            action: willDisable ? 'USUARIO_DESHABILITADO' : 'USUARIO_REACTIVADO',
-                            customerId: uid,
-                            customerName: fullName,
-                            details: `Estado cambiado a: ${newStatus}`,
-                            employeeUid: state.currentUser.uid,
-                            createdAt: serverTimestamp()
-                        });
-                        showToast(willDisable ? "Cuenta deshabilitada." : "Cuenta reactivada.", "success");
-                    } catch (err) {
-                        showToast("No se pudo actualizar el estado del usuario.", "error");
-                    }
-                }
-            );
         };
 
-        window.deleteUserProfile = function(uid, fullName) {
-            if (!state.isEmployee) return;
-            openConfirmModal(
-                "Eliminar Perfil de Usuario",
-                `¿Estás seguro de eliminar el perfil y tarjeta de ${fullName} de la base de datos? Esta acción no se puede deshacer.`,
-                async () => {
-                    try {
-                        await deleteDoc(getPublicDoc('customers', uid));
-                        await setDoc(doc(getPublicCol('audit_logs')), {
-                            action: 'USUARIO_ELIMINADO',
-                            customerId: uid,
-                            customerName: fullName,
-                            details: `Perfil eliminado del directorio por administración.`,
-                            employeeUid: state.currentUser.uid,
-                            createdAt: serverTimestamp()
-                        });
-                        showToast("Perfil eliminado correctamente.", "success");
-                    } catch (err) {
-                        showToast("No se pudo eliminar el perfil.", "error");
-                    }
-                }
-            );
-        };
-
-        let customerSearchFilter = "";
-        window.filterAdminCustomers = function(val) {
-            customerSearchFilter = val.trim().toLowerCase();
-            renderAdminCustomersTable();
-        };
-
-        function renderAdminCustomersTable() {
-            const filtered = state.allCustomers.filter(c => 
-                !customerSearchFilter ||
-                (c.fullName || '').toLowerCase().includes(customerSearchFilter) ||
-                (c.email || '').toLowerCase().includes(customerSearchFilter)
-            );
-
-            const tbody = document.getElementById('admin-customers-table-body');
-            const mobileCards = document.getElementById('admin-customers-mobile-cards');
-
-            tbody.innerHTML = filtered.map(c => {
-                const card = state.allCards.find(x => x.cardId === c.activeCardId) || { stampsCount: 0 };
-                const regDate = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' }) : '---';
-                const isDisabled = c.accountStatus === 'disabled';
-                const statusBadge = isDisabled
-                    ? '<span class="px-2 py-0.5 rounded bg-tt-red text-tt-cream text-[11px] font-display font-bold">Deshabilitada</span>'
-                    : '<span class="px-2 py-0.5 rounded bg-tt-teal text-tt-cream text-[11px] font-display font-bold">Activa</span>';
-
-                return `
-                    <tr class="hover:bg-tt-cream/60">
-                        <td class="py-3.5 px-3">
-                            <strong class="font-display font-bold text-tt-ink block">${c.fullName}</strong>
-                            <span class="text-xs text-tt-ink/70">${c.email || '---'}</span>
-                        </td>
-                        <td class="py-3.5 px-3 text-xs text-tt-ink/80">${regDate}</td>
-                        <td class="py-3.5 px-3 font-display font-extrabold text-tt-red">${card.stampsCount} / 10</td>
-                        <td class="py-3.5 px-3">${statusBadge}</td>
-                        <td class="py-3.5 px-3 text-right space-x-1">
-                            <button onclick="openCustomerExpediente('${c.uid}')" class="px-2.5 py-1.5 rounded-lg bg-tt-yellow border-2 border-tt-ink font-display font-bold text-xs" title="Ver Perfil">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
-                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}', '${c.fullName}')" class="px-2.5 py-1.5 rounded-lg bg-white border-2 border-tt-ink font-display font-bold text-xs" title="${isDisabled ? 'Reactivar' : 'Deshabilitar'}">
-                                <i class="fa-solid ${isDisabled ? 'fa-user-check text-tt-tealDark' : 'fa-user-slash text-tt-red'}"></i>
-                            </button>
-                            <button onclick="deleteUserProfile('${c.uid}', '${c.fullName}')" class="px-2.5 py-1.5 rounded-lg bg-tt-red text-tt-cream border-2 border-tt-ink font-display font-bold text-xs" title="Eliminar">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            mobileCards.innerHTML = filtered.map(c => {
-                const card = state.allCards.find(x => x.cardId === c.activeCardId) || { stampsCount: 0 };
-                const isDisabled = c.accountStatus === 'disabled';
-                return `
-                    <div class="p-4 rounded-2xl bg-tt-cream border-2 border-tt-ink space-y-3">
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <p class="font-display font-extrabold text-base text-tt-ink">${c.fullName}</p>
-                                <p class="text-xs text-tt-ink/75">${c.email || '---'}</p>
-                                <span class="inline-block mt-1 text-xs font-display font-extrabold text-tt-red">${card.stampsCount} / 10 sellos</span>
-                            </div>
-                            <span class="px-2 py-0.5 rounded text-[11px] font-display font-bold ${isDisabled ? 'bg-tt-red text-tt-cream' : 'bg-tt-teal text-tt-cream'}">
-                                ${isDisabled ? 'Deshabilitada' : 'Activa'}
-                            </span>
-                        </div>
-                        <div class="flex gap-2 pt-2 border-t border-tt-ink/15">
-                            <button onclick="openCustomerExpediente('${c.uid}')" class="flex-1 py-2 rounded-xl bg-tt-yellow border-2 border-tt-ink text-xs font-display font-bold">Perfil</button>
-                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}', '${c.fullName}')" class="flex-1 py-2 rounded-xl bg-white border-2 border-tt-ink text-xs font-display font-bold">
-                                ${isDisabled ? 'Reactivar' : 'Suspender'}
-                            </button>
-                            <button onclick="deleteUserProfile('${c.uid}', '${c.fullName}')" class="px-3 py-2 rounded-xl bg-tt-red text-tt-cream border-2 border-tt-ink text-xs font-display font-bold">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        window.openCustomerExpediente = function(uid) {
-            const c = state.allCustomers.find(x => x.uid === uid);
-            if (!c) return;
-            document.getElementById('admin-customer-detail-modal').classList.remove('hidden');
-            document.getElementById('det-client-name').textContent = c.fullName;
-            document.getElementById('det-client-info').textContent = `Correo: ${c.email || '---'} • UID: ${c.uid} • QR: ${c.qrToken}`;
-
-            const custPurchases = state.allPurchases.filter(p => p.customerId === uid);
-            document.getElementById('det-client-purchases').innerHTML = custPurchases.length
-                ? custPurchases.map(p => `<div class="p-2 rounded-xl bg-tt-cream border border-tt-ink flex justify-between"><span>$${Number(p.subtotal).toFixed(2)} (Ciclo #${p.cycleNumber})</span><strong class="text-tt-red">+${p.stampsAwarded}</strong></div>`).join('')
-                : '<p class="text-tt-ink/60">Sin compras registradas.</p>';
-
-            const custCards = state.allCards.filter(card => card.customerId === uid);
-            document.getElementById('det-client-cycles').innerHTML = custCards.length
-                ? custCards.map(card => `<div class="p-2 rounded-xl bg-tt-cream border border-tt-ink flex justify-between"><span>Ciclo #${card.cycleNumber} (${card.stampsCount}/10)</span><strong>${card.rewardRedeemed ? 'Canjeado' : 'Activo'}</strong></div>`).join('')
-                : '<p class="text-tt-ink/60">Sin ciclos.</p>';
-        };
-
+        // --- REPORTES Y AUDITORÍA ---
         window.renderAdminReports = function() {
-            const dateFilter = document.getElementById('report-date-filter').value;
-            const list = state.allAuditLogs.filter(log => {
-                if (!dateFilter || !log.createdAt?.toDate) return true;
-                return log.createdAt.toDate().toISOString().split('T')[0] === dateFilter;
+            const container = document.getElementById('admin-audit-logs-list');
+            const filterDate = document.getElementById('report-date-filter').value;
+
+            const logs = state.allAuditLogs.filter(log => {
+                if (!filterDate || !log.createdAt) return true;
+                const d = log.createdAt.toDate ? log.createdAt.toDate() : new Date(log.createdAt);
+                return d.toISOString().slice(0, 10) === filterDate;
             });
 
-            const container = document.getElementById('admin-audit-logs-list');
-            if (list.length === 0) {
-                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">No hay registros en esta fecha.</p>';
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-sm text-tt-ink/60 text-center py-8">No hay registros de actividad.</p>';
                 return;
             }
-            container.innerHTML = list.map(l => {
-                const ts = l.createdAt?.toDate ? l.createdAt.toDate().toLocaleString('es-MX') : 'Reciente';
+
+            container.innerHTML = logs.map(l => {
+                let badge = 'OPERACIÓN';
+                let detail = '';
+                if (l.action === 'PURCHASE_REGISTERED') {
+                    badge = 'COMPRA';
+                    detail = `${l.customerName} • $${Number(l.subtotal).toFixed(2)} MXN → +${l.stampsAwarded} sello(s)`;
+                } else if (l.action === 'REWARD_REDEEMED') {
+                    badge = 'CANJE';
+                    detail = `${l.customerName} canjeó Hamburguesa Clásica (Ciclo #${l.completedCycle} → #${l.nextCycle})`;
+                } else if (l.action === 'ACCOUNT_STATUS_CHANGED') {
+                    badge = 'ESTADO';
+                    detail = `Usuario ${l.targetUid} cambió a ${l.newStatus}`;
+                } else if (l.action === 'USER_DELETED') {
+                    badge = 'ELIMINADO';
+                    detail = `Perfil eliminado: ${l.targetName}`;
+                }
                 return `
                     <div class="p-3.5 rounded-2xl bg-tt-cream border-2 border-tt-ink flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                         <div>
-                            <span class="px-2 py-0.5 rounded bg-tt-ink text-tt-yellow font-display font-bold mr-2">${l.action}</span>
-                            <strong class="text-tt-ink">${l.customerName || ''}</strong>
-                            <p class="text-tt-ink/80 mt-1">${l.details}</p>
+                            <span class="px-2 py-0.5 rounded bg-tt-ink text-tt-yellow font-display font-bold uppercase mr-2">${badge}</span>
+                            <span class="font-semibold text-tt-ink">${detail}</span>
                         </div>
-                        <span class="text-tt-ink/70 font-mono text-[11px] shrink-0">${ts}</span>
+                        <span class="text-tt-ink/70 shrink-0">${formatDate(l.createdAt)}</span>
                     </div>
                 `;
             }).join('');
         };
 
-        // =========================================================================
-        // 8. NAVEGACIÓN, NOTIFICACIONES Y CICLO DE INICIO
-        // =========================================================================
-        window.navigateTo = function(view) {
-            ['view-landing', 'view-auth', 'view-admin-login', 'view-client', 'view-admin'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-
-            if (view === 'landing') {
-                document.getElementById('view-landing').classList.remove('hidden');
-            } else if (view === 'auth-register' || view === 'auth-login') {
-                document.getElementById('view-auth').classList.remove('hidden');
-                switchAuthTab(view === 'auth-register' ? 'register' : 'login');
-            } else if (view === 'admin-login') {
-                if (state.isEmployee) {
-                    document.getElementById('view-admin').classList.remove('hidden');
-                } else {
-                    document.getElementById('view-admin-login').classList.remove('hidden');
-                }
-            } else if (view === 'client-dashboard') {
-                if (!state.currentUser) return navigateTo('auth-login');
-                document.getElementById('view-client').classList.remove('hidden');
-            } else if (view === 'admin-dashboard') {
-                if (!state.isEmployee) {
-                    showToast("Acceso exclusivo para administradores autorizados.", "error");
-                    return navigateTo('admin-login');
-                }
-                document.getElementById('view-admin').classList.remove('hidden');
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        window.switchAuthTab = function(tab) {
-            const isReg = tab === 'register';
-            document.getElementById('tab-register').className = isReg
-                ? "py-3 rounded-2xl font-display font-extrabold text-sm transition bg-tt-red text-tt-cream"
-                : "py-3 rounded-2xl font-display font-extrabold text-sm transition text-tt-cream/70 hover:text-tt-cream";
-            document.getElementById('tab-login').className = !isReg
-                ? "py-3 rounded-2xl font-display font-extrabold text-sm transition bg-tt-yellow text-tt-ink"
-                : "py-3 rounded-2xl font-display font-extrabold text-sm transition text-tt-cream/70 hover:text-tt-cream";
-            document.getElementById('form-register').classList.toggle('hidden', !isReg);
-            document.getElementById('form-login').classList.toggle('hidden', isReg);
-        };
-
-        window.switchAdminSection = function(section) {
-            ['dashboard', 'customers', 'register-purchase', 'rewards', 'reports'].forEach(sec => {
-                document.getElementById(`admin-sec-${sec}`).classList.add('hidden');
-                const btn = document.getElementById(`admin-nav-${sec}`);
-                btn.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream";
-            });
-            document.getElementById(`admin-sec-${section}`).classList.remove('hidden');
-            document.getElementById(`admin-nav-${section}`).className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap bg-tt-red text-tt-cream border-2 border-tt-ink shadow-[3px_3px_0px_#132227]";
-        };
-
-        window.toggleResetModal = function(show) {
-            document.getElementById('reset-password-modal').classList.toggle('hidden', !show);
-        };
-
-        window.showToast = function(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const bg = type === 'success' ? 'bg-tt-yellow text-tt-ink' : type === 'error' ? 'bg-tt-red text-tt-cream' : 'bg-tt-cream text-tt-ink';
-            toast.className = `${bg} px-4 py-3 rounded-2xl border-3 border-tt-ink shadow-[5px_5px_0px_#132227] flex items-center gap-3 text-xs font-display font-bold pointer-events-auto transition-all duration-300`;
-            toast.innerHTML = `<i class="fa-solid fa-burger text-base shrink-0"></i><span>${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 4200);
-        };
-
-        window.openConfirmModal = function(title, message, onConfirm) {
-            const modal = document.getElementById('confirm-modal');
-            document.getElementById('confirm-title').textContent = title;
-            document.getElementById('confirm-message').textContent = message;
-            modal.classList.remove('hidden');
-
-            const okBtn = document.getElementById('confirm-ok-btn');
-            const cancelBtn = document.getElementById('confirm-cancel-btn');
-
-            const cleanup = () => {
-                modal.classList.add('hidden');
-                okBtn.onclick = null;
-                cancelBtn.onclick = null;
-            };
-
-            cancelBtn.onclick = cleanup;
-            okBtn.onclick = async () => {
-                cleanup();
-                await onConfirm();
-            };
-        };
-
-        window.showLegalNotice = function() {
-            openConfirmModal(
-                "Términos y Aviso de Privacidad - TORTRUCK LEALTAD",
-                "Programa exclusivo de TORTRUCK. Registro gratuito con 0 sellos. Primera compra elegible (subtotal de productos ≥ $150 MXN) otorga 2 sellos; compras posteriores elegibles otorgan 1 sello. Envío y propinas no participan. Al completar 10 sellos se otorga una Hamburguesa Clásica Gratis.",
-                () => {}
-            );
-        };
-
-        window.addEventListener('hashchange', () => {
-            if (window.location.hash === '#admin') {
-                navigateTo('admin-login');
-            }
-        });
-
-        window.addEventListener('load', () => {
-            injectMascotIllustrations();
-            initFirebaseSystem();
-            if (window.location.hash === '#admin') {
-                navigateTo('admin-login');
-            }
-        });
+        // Arranque automático de Firebase Spark
+        initFirebase();
     </script>
 </body>
 </html>
