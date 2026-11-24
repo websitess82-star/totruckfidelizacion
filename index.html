@@ -1016,11 +1016,11 @@
 
                                 <div class="border-2 border-tt-ink rounded-2xl p-4 bg-tt-cream">
                                     <span class="block text-xs font-display font-extrabold uppercase text-tt-ink mb-3">
-                                        <i class="fa-solid fa-magnifying-glass text-tt-red mr-1.5"></i>2. Buscar Usuario
+                                        <i class="fa-solid fa-magnifying-glass text-tt-red mr-1.5"></i>2. Buscar Usuario (<span id="pos-loaded-users-count">0</span> cargados)
                                     </span>
-                                    <input type="text" id="admin-search-client-input" oninput="searchClientForPurchase(this.value)" placeholder="Nombre, correo o ID QR..." 
+                                    <input type="text" id="admin-search-client-input" onfocus="searchClientForPurchase(this.value)" oninput="searchClientForPurchase(this.value)" placeholder="Nombre, correo o ID QR (TT-...)..." 
                                            class="w-full px-4 py-3 bg-white border-2 border-tt-ink rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-tt-teal">
-                                    <div id="admin-search-results" class="mt-2.5 max-h-36 overflow-y-auto space-y-1.5"></div>
+                                    <div id="admin-search-results" class="mt-2.5 max-h-40 overflow-y-auto space-y-1.5"></div>
                                 </div>
                             </div>
 
@@ -1879,14 +1879,25 @@
             onSnapshot(getPublicCol('customers'), (snap) => {
                 state.allCustomers = [];
                 snap.forEach(d => state.allCustomers.push({ id: d.id, ...d.data() }));
+                const countEl = document.getElementById('pos-loaded-users-count');
+                if (countEl) countEl.textContent = state.allCustomers.length;
                 renderAdminDashboardStats();
                 renderAdminCustomersList();
                 renderRecentRegistrations();
+            }, (err) => {
+                console.error("Error leyendo usuarios:", err);
+                showToast("Permiso denegado al leer usuarios. Publica las nuevas firestore.rules en Firebase Console.", "error");
             });
 
             onSnapshot(getPublicCol('cards'), (snap) => {
                 state.allCards = [];
                 snap.forEach(d => state.allCards.push({ id: d.id, ...d.data() }));
+                const pendingCount = state.allCards.filter(c => (c.stampsCount || 0) >= 10 && !c.rewardRedeemed).length;
+                const badge = document.getElementById('badge-pending-rewards');
+                if (badge) {
+                    badge.textContent = pendingCount;
+                    badge.classList.toggle('hidden', pendingCount === 0);
+                }
                 renderAdminDashboardStats();
                 renderAdminCustomersList();
                 renderAdminPendingRewards();
@@ -1912,104 +1923,108 @@
             });
         }
 
-        window.switchAdminSection = function(section) {
-            ['dashboard', 'customers', 'register-purchase', 'rewards', 'reports'].forEach(sec => {
-                document.getElementById(`admin-sec-${sec}`).classList.add('hidden');
-                const btn = document.getElementById(`admin-nav-${sec}`);
-                btn.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream";
+        window.switchAdminSection = function(secName) {
+            ['dashboard', 'customers', 'register-purchase', 'rewards', 'reports'].forEach(s => {
+                const secEl = document.getElementById(`admin-sec-${s}`);
+                const navEl = document.getElementById(`admin-nav-${s}`);
+                if (secEl) secEl.classList.add('hidden');
+                if (navEl) {
+                    navEl.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap text-tt-ink hover:bg-tt-cream";
+                }
             });
-            document.getElementById(`admin-sec-${section}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`admin-nav-${section}`);
-            activeBtn.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap bg-tt-red text-tt-cream border-2 border-tt-ink shadow-[3px_3px_0px_#132227]";
+
+            const activeSec = document.getElementById(`admin-sec-${secName}`);
+            const activeNav = document.getElementById(`admin-nav-${secName}`);
+            if (activeSec) activeSec.classList.remove('hidden');
+            if (activeNav) {
+                activeNav.className = "admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-2xl font-display font-bold text-sm whitespace-nowrap bg-tt-red text-tt-cream border-2 border-tt-ink shadow-[3px_3px_0px_#132227]";
+            }
+
+            if (secName === 'register-purchase') {
+                searchClientForPurchase(document.getElementById('admin-search-client-input')?.value || '');
+            }
         };
 
         window.setStatsPeriod = function(period) {
             state.statsPeriod = period;
-            document.querySelectorAll('.period-btn').forEach(b => {
-                b.className = "period-btn px-3 py-1 rounded-lg text-xs font-display font-bold text-tt-ink";
+            ['all', 'day', 'week', 'month'].forEach(p => {
+                const btn = document.getElementById(`period-${p}`);
+                if (!btn) return;
+                btn.className = p === period
+                    ? "period-btn px-3 py-1 rounded-lg text-xs font-display font-bold bg-tt-ink text-tt-cream"
+                    : "period-btn px-3 py-1 rounded-lg text-xs font-display font-bold text-tt-ink";
             });
-            document.getElementById(`period-${period}`).className = "period-btn px-3 py-1 rounded-lg text-xs font-display font-bold bg-tt-ink text-tt-cream";
             renderAdminDashboardStats();
         };
 
-        function isWithinPeriod(ts, period) {
-            if (period === 'all') return true;
-            if (!ts) return false;
-            const date = ts.toDate ? ts.toDate() : new Date(ts);
+        function isWithinSelectedPeriod(ts) {
+            if (state.statsPeriod === 'all' || !ts) return true;
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
             const now = new Date();
-            const diffMs = now - date;
-            const dayMs = 86400000;
-            if (period === 'day') return diffMs <= dayMs;
-            if (period === 'week') return diffMs <= dayMs * 7;
-            if (period === 'month') return diffMs <= dayMs * 30;
+            const diffMs = now - d;
+            if (state.statsPeriod === 'day') return diffMs <= 86400000;
+            if (state.statsPeriod === 'week') return diffMs <= 7 * 86400000;
+            if (state.statsPeriod === 'month') return diffMs <= 30 * 86400000;
             return true;
         }
 
         function renderAdminDashboardStats() {
-            const p = state.statsPeriod;
-            const filteredCustomers = state.allCustomers.filter(c => isWithinPeriod(c.createdAt, p));
-            const filteredPurchases = state.allPurchases.filter(x => isWithinPeriod(x.createdAt, p));
-            const filteredRewards = state.allRewards.filter(x => isWithinPeriod(x.redeemedAt, p));
+            const customers = state.allCustomers.filter(c => isWithinSelectedPeriod(c.createdAt));
+            const purchases = state.allPurchases.filter(p => isWithinSelectedPeriod(p.createdAt));
+            const rewards = state.allRewards.filter(r => isWithinSelectedPeriod(r.redeemedAt));
 
-            const totalStamps = filteredPurchases.reduce((acc, item) => acc + (item.stampsAwarded || 0), 0);
-            const pendingCards = state.allCards.filter(c => (c.stampsCount || 0) >= 10 && !c.rewardRedeemed);
-            const completedCards = state.allCards.filter(c => (c.stampsCount || 0) >= 10);
+            const totalStamps = purchases.reduce((acc, p) => acc + (Number(p.stampsAwarded) || 0), 0);
+            const completedCards = state.allCards.filter(c => (c.stampsCount || 0) >= 10).length;
+            const pendingRewards = state.allCards.filter(c => (c.stampsCount || 0) >= 10 && !c.rewardRedeemed).length;
 
-            document.getElementById('stat-total-clients').textContent = filteredCustomers.length;
-            document.getElementById('stat-total-purchases').textContent = filteredPurchases.length;
+            document.getElementById('stat-total-clients').textContent = customers.length;
+            document.getElementById('stat-total-purchases').textContent = purchases.length;
             document.getElementById('stat-total-stamps').textContent = totalStamps;
-            document.getElementById('stat-completed-cards').textContent = completedCards.length;
-            document.getElementById('stat-pending-rewards').textContent = pendingCards.length;
-            document.getElementById('stat-redeemed-rewards').textContent = filteredRewards.length;
-
-            const badge = document.getElementById('badge-pending-rewards');
-            if (pendingCards.length > 0) {
-                badge.textContent = pendingCards.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
+            document.getElementById('stat-completed-cards').textContent = completedCards;
+            document.getElementById('stat-pending-rewards').textContent = pendingRewards;
+            document.getElementById('stat-redeemed-rewards').textContent = rewards.length;
         }
 
         function renderRecentRegistrations() {
             const container = document.getElementById('recent-registrations-list');
-            const sorted = [...state.allCustomers].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 6);
+            if (!container) return;
+            const sorted = [...state.allCustomers].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 5);
             if (sorted.length === 0) {
                 container.innerHTML = '<p class="text-xs text-tt-ink/60">Sin usuarios registrados aún.</p>';
                 return;
             }
             container.innerHTML = sorted.map(c => `
-                <div class="p-3 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-3 text-xs">
+                <div class="p-3 rounded-2xl bg-tt-cream border-2 border-tt-ink flex items-center justify-between gap-2 text-xs">
                     <div>
-                        <strong class="font-display font-extrabold text-tt-ink block">${c.fullName}</strong>
-                        <span class="text-tt-ink/70">${c.email || ''} • ${formatDate(c.createdAt)}</span>
+                        <strong class="font-display text-sm text-tt-ink block">${c.fullName}</strong>
+                        <span class="text-tt-ink/70">${c.email || ''} • ID: <span class="font-mono font-bold text-tt-red">${c.qrToken || '---'}</span></span>
                     </div>
-                    <span class="px-2.5 py-1 rounded-lg border border-tt-ink font-display font-bold ${c.accountStatus === 'disabled' ? 'bg-tt-red text-tt-cream' : 'bg-tt-yellow text-tt-ink'}">
-                        ${c.accountStatus === 'disabled' ? 'Suspendida' : 'Activa'}
-                    </span>
+                    <span class="text-tt-ink/70 shrink-0">${formatDate(c.createdAt)}</span>
                 </div>
             `).join('');
         }
 
-        // --- GESTIÓN DE USUARIOS (BUSCAR, SUSPENDER/ACTIVAR, ELIMINAR) ---
-        let customerSearchTerm = '';
-        window.filterAdminCustomers = function(val) {
-            customerSearchTerm = val.toLowerCase().trim();
+        let adminCustomerSearchTerm = '';
+        window.filterAdminCustomers = function(term) {
+            adminCustomerSearchTerm = (term || '').trim().toLowerCase();
             renderAdminCustomersList();
         };
 
         function renderAdminCustomersList() {
             const tbody = document.getElementById('admin-customers-table-body');
-            const mobileContainer = document.getElementById('admin-customers-mobile-cards');
+            const mobileList = document.getElementById('admin-customers-mobile-cards');
+            if (!tbody || !mobileList) return;
 
-            const filtered = state.allCustomers.filter(c => 
-                (c.fullName || '').toLowerCase().includes(customerSearchTerm) ||
-                (c.email || '').toLowerCase().includes(customerSearchTerm)
+            const filtered = state.allCustomers.filter(c =>
+                !adminCustomerSearchTerm ||
+                (c.fullName || '').toLowerCase().includes(adminCustomerSearchTerm) ||
+                (c.email || '').toLowerCase().includes(adminCustomerSearchTerm) ||
+                (c.qrToken || '').toLowerCase().includes(adminCustomerSearchTerm)
             );
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-tt-ink/60">No se encontraron usuarios.</td></tr>';
-                mobileContainer.innerHTML = '<p class="text-center text-tt-ink/60 py-4 text-sm">No se encontraron usuarios.</p>';
+                tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-tt-ink/60 text-xs">No se encontraron usuarios.</td></tr>';
+                mobileList.innerHTML = '<p class="text-center text-tt-ink/60 text-xs py-4">No se encontraron usuarios.</p>';
                 return;
             }
 
@@ -2018,27 +2033,25 @@
                 const isDisabled = c.accountStatus === 'disabled';
                 return `
                     <tr class="hover:bg-tt-cream/60">
-                        <td class="py-3.5 px-3">
-                            <span class="font-display font-extrabold text-tt-ink block">${c.fullName}</span>
-                            <span class="text-xs text-tt-ink/70">${c.email || ''}</span>
+                        <td class="py-3 px-3">
+                            <strong class="font-display text-tt-ink block">${c.fullName}</strong>
+                            <span class="text-xs text-tt-ink/70">${c.email || ''} • <span class="font-mono text-tt-red font-bold">${c.qrToken || ''}</span></span>
                         </td>
-                        <td class="py-3.5 px-3 text-xs text-tt-ink/75">${formatDate(c.createdAt)}</td>
-                        <td class="py-3.5 px-3">
-                            <span class="px-2.5 py-1 rounded-lg bg-tt-yellow border border-tt-ink font-display font-extrabold text-xs">${card.stampsCount || 0} / 10</span>
-                        </td>
-                        <td class="py-3.5 px-3">
-                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-display font-extrabold uppercase ${isDisabled ? 'bg-tt-red text-tt-cream' : 'bg-tt-teal text-tt-cream'}">
+                        <td class="py-3 px-3 text-xs text-tt-ink/75">${formatDate(c.createdAt)}</td>
+                        <td class="py-3 px-3 font-display font-extrabold text-tt-ink">${card.stampsCount || 0} / 10</td>
+                        <td class="py-3 px-3">
+                            <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-display font-bold border border-tt-ink ${isDisabled ? 'bg-tt-red text-tt-cream' : 'bg-tt-yellow text-tt-ink'}">
                                 ${isDisabled ? 'Suspendida' : 'Activa'}
                             </span>
                         </td>
-                        <td class="py-3.5 px-3 text-right space-x-1.5">
-                            <button onclick="inspectCustomerDetail('${c.uid}')" class="px-2.5 py-1.5 rounded-lg bg-white border border-tt-ink text-xs font-display font-bold hover:bg-tt-yellow" title="Ver Perfil">
+                        <td class="py-3 px-3 text-right space-x-1">
+                            <button onclick="viewCustomerDetail('${c.uid}')" class="px-2.5 py-1.5 rounded-lg bg-tt-cream border border-tt-ink text-xs font-display font-bold" title="Ver Perfil">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
-                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}')" class="px-2.5 py-1.5 rounded-lg bg-white border border-tt-ink text-xs font-display font-bold hover:bg-tt-yellow" title="${isDisabled ? 'Reactivar' : 'Suspender'}">
+                            <button onclick="toggleCustomerAccountStatus('${c.uid}', '${isDisabled ? 'active' : 'disabled'}')" class="px-2.5 py-1.5 rounded-lg bg-white border border-tt-ink text-xs font-display font-bold" title="${isDisabled ? 'Reactivar' : 'Suspender'}">
                                 <i class="fa-solid ${isDisabled ? 'fa-user-check text-tt-tealDark' : 'fa-user-slash text-tt-red'}"></i>
                             </button>
-                            <button onclick="deleteUserAccountRecord('${c.uid}', '${c.fullName}')" class="px-2.5 py-1.5 rounded-lg bg-tt-red text-tt-cream border border-tt-ink text-xs font-display font-bold" title="Eliminar Perfil">
+                            <button onclick="deleteCustomerProfile('${c.uid}', '${c.fullName}')" class="px-2.5 py-1.5 rounded-lg bg-tt-red text-tt-cream border border-tt-ink text-xs font-display font-bold" title="Eliminar">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
@@ -2046,142 +2059,146 @@
                 `;
             }).join('');
 
-            mobileContainer.innerHTML = filtered.map(c => {
+            mobileList.innerHTML = filtered.map(c => {
                 const card = state.allCards.find(x => x.cardId === c.activeCardId) || { stampsCount: 0 };
                 const isDisabled = c.accountStatus === 'disabled';
                 return `
-                    <div class="p-4 rounded-2xl bg-tt-cream border-2 border-tt-ink space-y-2.5">
+                    <div class="p-4 rounded-2xl bg-tt-cream border-2 border-tt-ink space-y-2">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="font-display font-extrabold text-base text-tt-ink">${c.fullName}</p>
-                                <p class="text-xs text-tt-ink/75">${c.email || ''}</p>
+                                <strong class="font-display font-extrabold text-base text-tt-ink block">${c.fullName}</strong>
+                                <span class="text-xs text-tt-ink/75">${c.email || ''}</span>
                             </div>
-                            <span class="px-2.5 py-1 rounded-lg bg-tt-yellow border border-tt-ink font-display font-extrabold text-xs">${card.stampsCount || 0}/10</span>
+                            <span class="px-2.5 py-0.5 rounded-lg bg-tt-yellow border border-tt-ink font-display font-extrabold text-xs">
+                                ${card.stampsCount || 0}/10
+                            </span>
                         </div>
-                        <div class="flex flex-wrap gap-2 pt-2 border-t border-tt-ink/15">
-                            <button onclick="inspectCustomerDetail('${c.uid}')" class="flex-1 py-2 rounded-xl bg-white border border-tt-ink text-xs font-display font-bold">Perfil</button>
-                            <button onclick="toggleUserAccountStatus('${c.uid}', '${c.accountStatus || 'active'}')" class="flex-1 py-2 rounded-xl bg-white border border-tt-ink text-xs font-display font-bold">
-                                ${isDisabled ? 'Reactivar' : 'Suspender'}
-                            </button>
-                            <button onclick="deleteUserAccountRecord('${c.uid}', '${c.fullName}')" class="px-3 py-2 rounded-xl bg-tt-red text-tt-cream border border-tt-ink text-xs font-display font-bold">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                        <div class="flex items-center justify-between pt-2 border-t border-tt-ink/15 text-xs">
+                            <span class="font-mono font-bold text-tt-red">${c.qrToken || '---'}</span>
+                            <div class="flex gap-1.5">
+                                <button onclick="viewCustomerDetail('${c.uid}')" class="px-2.5 py-1 rounded-lg bg-white border border-tt-ink font-bold">Perfil</button>
+                                <button onclick="toggleCustomerAccountStatus('${c.uid}', '${isDisabled ? 'active' : 'disabled'}')" class="px-2.5 py-1 rounded-lg bg-white border border-tt-ink font-bold">
+                                    ${isDisabled ? 'Activar' : 'Suspender'}
+                                </button>
+                                <button onclick="deleteCustomerProfile('${c.uid}', '${c.fullName}')" class="px-2.5 py-1 rounded-lg bg-tt-red text-tt-cream border border-tt-ink font-bold">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        window.toggleUserAccountStatus = async function(uid, currentStatus) {
-            if (!state.isAdmin) return showToast("Sin permisos administrativos.", "error");
-            if (uid === state.currentUser.uid) return showToast("No puedes suspender tu propia cuenta administrativa.", "error");
+        window.viewCustomerDetail = function(uid) {
+            const cust = state.allCustomers.find(c => c.uid === uid);
+            if (!cust) return;
+            document.getElementById('det-client-name').textContent = cust.fullName;
+            document.getElementById('det-client-info').textContent = `${cust.email || ''} • ID QR: ${cust.qrToken || '---'} • Registro: ${formatDate(cust.createdAt)}`;
 
-            const nextStatus = currentStatus === 'disabled' ? 'active' : 'disabled';
-            const confirmed = await showConfirmDialog(
-                nextStatus === 'disabled' ? "Suspender Cuenta" : "Reactivar Cuenta",
-                `¿Confirmas cambiar el estado de esta cuenta a ${nextStatus === 'disabled' ? 'SUSPENDIDA' : 'ACTIVA'}?`
-            );
-            if (!confirmed) return;
+            const custPurchases = state.allPurchases.filter(p => p.customerId === uid);
+            document.getElementById('det-client-purchases').innerHTML = custPurchases.length
+                ? custPurchases.map(p => `<div class="p-2 rounded-xl bg-tt-cream border border-tt-ink">$${Number(p.subtotal).toFixed(2)} MXN → <strong>+${p.stampsAwarded} sello(s)</strong> (${formatDate(p.createdAt)})</div>`).join('')
+                : '<p class="text-tt-ink/60">Sin compras registradas.</p>';
+
+            const custCards = state.allCards.filter(c => c.customerId === uid);
+            document.getElementById('det-client-cycles').innerHTML = custCards.length
+                ? custCards.map(c => `<div class="p-2 rounded-xl bg-tt-cream border border-tt-ink">Ciclo #${c.cycleNumber}: <strong>${c.stampsCount || 0}/10</strong> (${c.rewardRedeemed ? 'Canjeado' : 'Activo'})</div>`).join('')
+                : '<p class="text-tt-ink/60">Sin ciclos registrados.</p>';
+
+            document.getElementById('admin-customer-detail-modal').classList.remove('hidden');
+        };
+
+        window.toggleCustomerAccountStatus = async function(uid, newStatus) {
+            if (!state.isAdmin) return;
+            const label = newStatus === 'disabled' ? 'suspender' : 'reactivar';
+            const ok = await showConfirmDialog("Cambiar Estado de Cuenta", `¿Deseas ${label} esta cuenta de usuario?`);
+            if (!ok) return;
 
             try {
-                await updateDoc(getPublicDoc('customers', uid), { accountStatus: nextStatus });
-                await setDoc(getPublicDoc('audit_logs', `STATUS_${Date.now()}`), {
+                await updateDoc(getPublicDoc('customers', uid), { accountStatus: newStatus });
+                await setDoc(getPublicDoc('audit_logs', `LOG_STATUS_${uid}_${Date.now()}`), {
                     action: 'ACCOUNT_STATUS_CHANGED',
                     targetUid: uid,
-                    newStatus: nextStatus,
+                    newStatus,
                     byUid: state.currentUser.uid,
                     createdAt: serverTimestamp()
                 });
-                showToast(`Cuenta actualizada a ${nextStatus === 'disabled' ? 'Suspendida' : 'Activa'}.`, "success");
+                showToast(`Cuenta ${newStatus === 'disabled' ? 'suspendida' : 'reactivada'} correctamente.`, "success");
             } catch (err) {
-                showToast(err.message || "Error actualizando cuenta.", "error");
+                showToast("Error actualizando estado de cuenta.", "error");
             }
         };
 
-        window.deleteUserAccountRecord = async function(uid, fullName) {
-            if (!state.isAdmin) return showToast("Sin permisos administrativos.", "error");
-            if (uid === state.currentUser.uid) return showToast("No puedes eliminar tu propia cuenta administrativa.", "error");
-
-            const confirmed = await showConfirmDialog(
-                "Eliminar Registro de Usuario",
-                `¿Estás seguro de eliminar el perfil de ${fullName}? Esta acción eliminará su perfil y tarjeta activa en Firestore.`
-            );
-            if (!confirmed) return;
+        window.deleteCustomerProfile = async function(uid, fullName) {
+            if (!state.isAdmin) return;
+            const ok = await showConfirmDialog("Eliminar Perfil de Usuario", `¿Estás seguro de eliminar el perfil de ${fullName} de Firestore? Esta acción no se puede deshacer.`);
+            if (!ok) return;
 
             try {
-                const cust = state.allCustomers.find(c => c.uid === uid);
-                if (cust?.activeCardId) {
-                    await deleteDoc(getPublicDoc('cards', cust.activeCardId));
-                }
                 await deleteDoc(getPublicDoc('customers', uid));
-                await setDoc(getPublicDoc('audit_logs', `DEL_${Date.now()}`), {
+                await setDoc(getPublicDoc('audit_logs', `LOG_DEL_${uid}_${Date.now()}`), {
                     action: 'USER_DELETED',
                     targetUid: uid,
                     targetName: fullName,
                     byUid: state.currentUser.uid,
                     createdAt: serverTimestamp()
                 });
-                showToast(`Registro de ${fullName} eliminado.`, "success");
+                showToast("Perfil de usuario eliminado.", "success");
             } catch (err) {
-                showToast(err.message || "Error eliminando usuario.", "error");
+                showToast("Error eliminando perfil.", "error");
             }
         };
 
-        window.inspectCustomerDetail = function(uid) {
-            const cust = state.allCustomers.find(c => c.uid === uid);
-            if (!cust) return;
-            document.getElementById('det-client-name').textContent = cust.fullName;
-            document.getElementById('det-client-info').textContent = `Correo: ${cust.email || ''} • ID QR: ${cust.qrToken} • Ciclo #${cust.currentCycleNumber}`;
-
-            const custPurchases = state.allPurchases.filter(p => p.customerId === uid);
-            document.getElementById('det-client-purchases').innerHTML = custPurchases.length
-                ? custPurchases.map(p => `<div class="p-2 bg-tt-cream rounded-lg border border-tt-ink/20 flex justify-between"><span>$${p.subtotal} MXN (${formatDate(p.createdAt)})</span><strong class="text-tt-red">+${p.stampsAwarded}</strong></div>`).join('')
-                : '<p class="text-tt-ink/60">Sin compras.</p>';
-
-            const custCards = state.allCards.filter(c => c.customerId === uid);
-            document.getElementById('det-client-cycles').innerHTML = custCards.length
-                ? custCards.map(c => `<div class="p-2 bg-tt-cream rounded-lg border border-tt-ink/20 flex justify-between"><span>Ciclo #${c.cycleNumber} (${c.stampsCount}/10 sellos)</span><strong>${c.rewardRedeemed ? 'Canjeada' : 'Activa'}</strong></div>`).join('')
-                : '<p class="text-tt-ink/60">Sin ciclos.</p>';
-
-            document.getElementById('admin-customer-detail-modal').classList.remove('hidden');
-        };
-
         // --- REGISTRO DE COMPRAS EN CAJA (REGLAS OFICIALES TORTRUCK) ---
+        let isProcessingQrScan = false;
         window.toggleQrScanner = async function() {
             const btn = document.getElementById('btn-toggle-scanner');
             if (state.isScanningQr && state.qrScannerInstance) {
-                await state.qrScannerInstance.stop();
+                try { await state.qrScannerInstance.stop(); } catch (_) {}
                 state.isScanningQr = false;
+                isProcessingQrScan = false;
                 btn.textContent = "Activar Cámara";
                 document.getElementById('qr-reader').innerHTML = "Cámara inactiva";
                 return;
             }
             try {
+                isProcessingQrScan = false;
                 state.qrScannerInstance = new Html5Qrcode("qr-reader");
                 await state.qrScannerInstance.start(
                     { facingMode: "environment" },
-                    { fps: 12, qrbox: { width: 220, height: 220 } },
+                    { fps: 10, qrbox: { width: 220, height: 220 } },
                     async (decodedText) => {
-                        const cleanToken = decodedText.trim().toUpperCase();
-                        let found = state.allCustomers.find(c =>
-                            (c.qrToken || '').toUpperCase() === cleanToken ||
-                            (c.uid || '').toUpperCase() === cleanToken
-                        );
+                        if (isProcessingQrScan) return;
+                        isProcessingQrScan = true;
 
-                        if (!found) {
-                            const snap = await getDocs(query(getPublicCol('customers'), where('qrToken', '==', cleanToken)));
-                            if (!snap.empty) {
-                                found = { id: snap.docs[0].id, ...snap.docs[0].data() };
-                                state.allCustomers.push(found);
+                        try {
+                            const cleanToken = decodedText.trim().toUpperCase();
+                            let found = state.allCustomers.find(c =>
+                                (c.qrToken || '').toUpperCase() === cleanToken ||
+                                (c.uid || '').toUpperCase() === cleanToken
+                            );
+
+                            if (!found) {
+                                const snap = await getDocs(query(getPublicCol('customers'), where('qrToken', '==', cleanToken)));
+                                if (!snap.empty) {
+                                    found = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                                    state.allCustomers.push(found);
+                                }
                             }
-                        }
 
-                        if (found) {
-                            selectCustomerForPos(found.uid);
-                            showToast(`QR verificado: ${found.fullName}`, "success");
-                            window.toggleQrScanner();
-                        } else {
-                            showToast(`QR (${cleanToken}) no encontrado en la base de datos.`, "error");
+                            if (found) {
+                                selectCustomerForPos(found.uid);
+                                showToast(`QR verificado: ${found.fullName}`, "success");
+                                await window.toggleQrScanner();
+                            } else {
+                                showToast(`Código leído: ${cleanToken} — Usuario no encontrado.`, "error");
+                                setTimeout(() => { isProcessingQrScan = false; }, 1800);
+                            }
+                        } catch (scanErr) {
+                            console.error("Error procesando QR:", scanErr);
+                            showToast("Error leyendo base de datos. Revisa tus reglas de Firestore.", "error");
+                            setTimeout(() => { isProcessingQrScan = false; }, 1800);
                         }
                     }
                 );
@@ -2195,8 +2212,7 @@
         let searchDebounceTimer = null;
         window.searchClientForPurchase = function(queryText) {
             const container = document.getElementById('admin-search-results');
-            const q = queryText.trim().toLowerCase();
-            if (!q) { container.innerHTML = ''; return; }
+            const q = (queryText || '').trim().toLowerCase();
 
             const renderMatches = (matches) => {
                 if (matches.length === 0) {
@@ -2215,6 +2231,11 @@
                 `).join('');
             };
 
+            if (!q) {
+                renderMatches(state.allCustomers.slice(0, 6));
+                return;
+            }
+
             const localMatches = state.allCustomers.filter(c => 
                 (c.fullName || '').toLowerCase().includes(q) ||
                 (c.email || '').toLowerCase().includes(q) ||
@@ -2224,7 +2245,6 @@
 
             renderMatches(localMatches);
 
-            // Si no está en caché y parece un código TT-..., buscar directo en Firestore
             if (localMatches.length === 0 && q.startsWith('tt-')) {
                 clearTimeout(searchDebounceTimer);
                 searchDebounceTimer = setTimeout(async () => {
